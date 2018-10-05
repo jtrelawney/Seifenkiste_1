@@ -4,6 +4,9 @@
    process for each connection
    gcc server2.c -lsocket
 */
+
+// source: http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
