@@ -12,7 +12,7 @@
 #include <mutex>
 
 
-//std::mutex mtx1;           // mutex for critical section
+std::mutex mtx1;           // mutex for critical section
 
 using namespace std;
 
@@ -40,10 +40,10 @@ public:
 	}
 
 	static message_queue &getInstance() {
-		//mtx1.lock();
+		mtx1.lock();
 		printf("call to message_queue.getInstance\n");
         static message_queue instance;
-        //mtx1.unlock();
+        mtx1.unlock();
 		return instance;
 	   }
 
