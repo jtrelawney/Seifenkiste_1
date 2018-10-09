@@ -56,7 +56,12 @@ int tcp_client::send(char *buffer,unsigned long bufferlength){
     int n = write(sockfd,headerdata,headerlength);
     if (n < 0) 
          error("ERROR writing header to socket");
-         
+    
+    n = write(sockfd,buffer,bufferlength);
+    if (n<0)
+		error("ERROR writing buffer to socket");
+
+	//after submitting the message wait for a response
     char answerbuffer[256];
     bzero(answerbuffer,256);
     n = read(sockfd,answerbuffer,255);
@@ -64,11 +69,7 @@ int tcp_client::send(char *buffer,unsigned long bufferlength){
          error("ERROR reading answer from socket");
     
     printf("%s\n",answerbuffer);
-
-    n = write(sockfd,buffer,bufferlength);
-    if (n<0)
-		error("ERROR writing buffer to socket");
-         
+        
     return 0;    
 }
 
@@ -87,7 +88,7 @@ int tcp_client::create_header(char **sessioninfo, unsigned long imagelen){
     info[1]='o';
     info[2]='n';
     memcpy(&info[3],&imagelen,sizeof(imagelen));
-    info[infolength-1]='h';
+    info[infolength-1]='c';
 
     unsigned long test;
     memcpy(&test,&info[3],sizeof(unsigned long));
