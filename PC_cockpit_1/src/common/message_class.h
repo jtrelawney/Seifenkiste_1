@@ -63,6 +63,8 @@ public:
 	virtual ~message_class();
 
     void print_meta_data();
+	//int writefile(unsigned long imagesize, char *image);
+	int write_to_file(const char *fn="./test.jpeg");
 };
 
 #endif /* COMMON_MESSAGE_CLASS_H_ */

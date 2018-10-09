@@ -141,3 +141,15 @@ message_class::~message_class() {
 			free (message_buffer);
 }
 
+int message_class::write_to_file(const char *fn){
+
+    printf("writing %lu bytes from buffer %lu into file\n", message_size, (unsigned long)message_buffer);
+
+	FILE *file;
+	file = fopen(fn,"w");
+	fwrite(message_buffer, message_size,1,file);
+	fclose(file);
+	return 0;
+}
+
+
