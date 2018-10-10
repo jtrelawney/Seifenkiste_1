@@ -23,17 +23,6 @@
 #include <common/message_queue.h>
 
 
-void test_message(){
-
-	//message_type_def mtype, unsigned long buffersiz, unsigned long time, origin_type_def orig, unsigned long orig_time
-
-	message_class message(message_class::imu,100,1,arduino,1);
-	char *message_ptr, *buffer_ptr;
-	buffer_ptr = message.get_buffer();
-	message_ptr = message.prep_and_get_message_buffer();
-	printf("message pointer = %lu\n",(unsigned long) message_ptr);
-	printf("buffer pointer = %lu\n",(unsigned long) buffer_ptr);
-}
 
 int test_queue(){
 	message_queue &s = message_queue::getInstance();
@@ -53,7 +42,6 @@ int test_queue(){
 
 int main(int argc, char *argv[])
 {
-	test_message();
 
 	printf("\n\n\ntest the queue\n\n");
 	test_queue();

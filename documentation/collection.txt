@@ -1,0 +1,4 @@
+about timing, it seems unsigned int = 4 bytes is used for timing, no surprise
+http://yosh.ke.mu/article/raspberry_pi_getting_time
+http://www.raspberry-projects.com/pi/programming-in-c/timing/clock_gettime-for-acurate-timing
+

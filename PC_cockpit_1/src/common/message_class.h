@@ -10,6 +10,8 @@
 
 #include <stdio.h>	//printf
 #include <stdlib.h>	//malloc,free
+#include <string.h> //memcpy
+
 #include <common/defs.h>
 
 class message_class {
@@ -18,11 +20,16 @@ public:
     // to organize the meta data
     struct header_info_type{
         int result;
-        char message_type;
-        unsigned int message_length;
-        char *databuffer;
+        char message_type;              // either l or s   (long or short)
+        unsigned int time_sent;         // time when message was sent
+        char sensor_type;                 // camera, usensor, imu, etc
+        char origin;                    // source of message / data, arduino, jetson, rpi, etc
+        unsigned int time_origin;       // time at origin when data was collected
+        unsigned int data_length;    // length of data segment
+        char *databuffer;               // reserved memory for the data
 
-        header_info_type():result(-1),message_type(undefined),message_length(0),databuffer(0){};
+        header_info_type() : result(-1), message_type('u'), time_sent(0), sensor_type('u'), origin('u'), time_origin(0), data_length(0), databuffer(0){};
+        void print_data(){ printf("header info data:\n"); };
         };
 
     //state in constructor starts with not_initialized, when the header is processed and all data is availble state goes to complete
@@ -30,36 +37,32 @@ public:
     // any state with not initialized means error along the way
     enum message_state_def {not_initialized, waiting_for_buffer_data, complete};
 
-	enum message_type_def {undefined,imu,usonic1,camera1,time};
-    message_type_def convert_to_message_type(const char mtype);
+	enum message_origin_def {undefined, imu, usonic1, camera1, time};
+    message_origin_def convert_to_message_origin(const char mtype);
 
 
     //to be deleted once the infotype works
-	message_class(message_type_def mtype, unsigned long buffersiz, unsigned long time, origin_type_def orig, unsigned long orig_time);
+	message_class(message_origin_def mtype, unsigned long buffersiz, unsigned long time, origin_type_def orig, unsigned long orig_time);
 	message_class(header_info_type header_info);
 
 private:
-	message_class();
 
     message_state_def state;
-	message_type_def message_type;
-	unsigned long buffer_size;
-	unsigned long header_size;
-	unsigned long message_size;
-	unsigned long timestamp;
-	origin_type_def origin;
-	unsigned long origin_timestamp;
 
-	char *message_buffer;
+    unsigned long time_sent;
+    char sensor_type;
+    message_origin_def data_origin;
+    unsigned long time_origin;
+    unsigned long data_length;
+    char *data_buffer;
+
+	message_class();
 
 public:
     message_state_def get_state();
-    unsigned long get_message_length();
-    char *get_message_buffer_ptr();
+    unsigned long get_data_length();
+    char *get_data_buffer_ptr();
 
-
-	char * get_buffer();
-	char * prep_and_get_message_buffer();
 	virtual ~message_class();
 
     void print_meta_data();
