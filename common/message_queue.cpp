@@ -5,7 +5,7 @@
  *      Author: ethan
  */
 
-#include <common/message_queue.h>
+#include <message_queue.h>
 
 message_queue::message_queue():max_elements(0) {}
 

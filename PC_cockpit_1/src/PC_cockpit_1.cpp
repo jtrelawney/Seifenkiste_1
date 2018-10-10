@@ -20,8 +20,8 @@
 #include <tcp_server.h>
 #include <message_class.h>
 
-#include <common/defs.h>
-#include <common/message_queue.h>
+#include <defs.h>
+#include <message_queue.h>
 
 
 

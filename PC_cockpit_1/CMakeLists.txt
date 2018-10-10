@@ -11,11 +11,11 @@ SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS
 
 #add_subdirectory(./src)
 
-include_directories(src src/tcp_reader src/common ../common)
+include_directories(src src/tcp_reader src ../common)
 
 add_library(tcp_server SHARED src/tcp_reader/tcp_server.cpp)
 add_library(message_class SHARED ../common/message_class.cpp)
-add_library(message_queue SHARED src/common/message_queue.cpp)
+add_library(message_queue SHARED ../common/message_queue.cpp)
 
 #this didn't work, the library always ended up in build
 #install(TARGETS tcp_client DESTINATION ./lib)
