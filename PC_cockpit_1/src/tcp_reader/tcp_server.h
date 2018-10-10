@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <common/message_class.h>
+#include <message_class.h>
 
 class tcp_server {
 

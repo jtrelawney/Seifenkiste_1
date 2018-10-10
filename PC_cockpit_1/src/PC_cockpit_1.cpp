@@ -18,8 +18,9 @@
 #include <unistd.h>
 
 #include <tcp_server.h>
+#include <message_class.h>
+
 #include <common/defs.h>
-#include <common/message_class.h>
 #include <common/message_queue.h>
 
 

@@ -12,7 +12,7 @@
 #include <stdlib.h>	//malloc,free
 #include <string.h> //memcpy
 
-#include <common/defs.h>
+#include <defs.h>
 
 class message_class {
 public:

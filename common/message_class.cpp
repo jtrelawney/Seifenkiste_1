@@ -5,7 +5,7 @@
  *      Author: ethan
  */
 
-#include <common/message_class.h>
+#include <message_class.h>
 
 message_class::message_origin_def message_class::convert_to_message_origin(const char mtype){
 
