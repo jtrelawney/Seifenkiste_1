@@ -11,6 +11,110 @@
     }
 */
 
+#include <iostream>
+#include <cstdio>
+#include <stdio.h>
+
+void tcp_client::send_test_image(char *image, unsigned long imagelen){
+
+	int length;
+	char *thebytes;
+
+	// collect data for the test
+	
+	//sender = rpi
+	sender_type_def sender = rpi;
+	std::cout << "semder " << sender << std::endl;
+	//  time sent = local time	
+	unsigned long current_time = get_timestamp();
+	printf("message time = %lu\n",current_time);
+	// sensor platform
+	sender_type_def sensor_platform = rpi;
+	// sensor type
+	sensor_type_def sensortype= camera1;
+	// sensor time
+	unsigned long sensor_time = get_timestamp()-1000;
+	printf("sensor time = %lu\n",sensor_time);
+	// data length
+	unsigned int data_length = imagelen;
+	// ptr to databuffer
+	char *data_buffer = image;
+
+	// initialize a new message - doesnt need the sesnor information and buffer ptr
+	message_class test_message(sensor_platform, sensortype, sensor_time, data_length);
+	
+	// prepare header message using a stream buffer which to fill with the relevant data
+	std::stringstream buffer;
+
+	// start segment
+	buffer << "con";
+
+	//sender = rpi
+	buffer << sender;
+
+	//  time sent = local time	
+	thebytes = (char *) &current_time;
+	length = sizeof(current_time);
+	for(int i=0; i<length; i++) { buffer << *(thebytes+i); }
+	for(int i=0; i<length; i++) { printf("%c   %c\n",thebytes[i],*(thebytes+i)); }
+
+	// sensor platform
+	buffer << sensor_platform;
+
+	// sensor type
+	buffer << sensortype;
+
+	// sensor time
+	thebytes = (char *) &sensor_time;
+	length = sizeof(sensor_time);
+	for(int i=0; i<length; i++) { buffer << *(thebytes+i); }
+	for(int i=0; i<length; i++) { printf("%c   %c\n",thebytes[i],*(thebytes+i)); }
+	
+	// data length
+	thebytes = (char *) &data_length;
+	length = sizeof(data_length);
+	for(int i=0; i<length; i++) { buffer << *(thebytes+i); }
+	for(int i=0; i<length; i++) { printf("%c   %c\n",thebytes[i],*(thebytes+i)); }
+
+	// end segment
+	buffer << "end";
+
+	/*
+	std::string tester;
+	buffer >> tester;
+	int test_length = tester.length();
+	std::cout << "tester = " <<  tester << "   length = " << test_length << std::endl; // tester.length() << std::endl;
+	exit(0);
+	*/
+	
+	// buffer completed now stream it into header
+	std::string header;
+	buffer >> header;
+
+	int header_length = header.length();
+	std::cout << "header = " <<  header << "   length = " << header_length << std::endl;
+	if (header_length!=21) {
+		std::cout << "message length doesn't match 21, what a worry" << std::endl;
+		exit(0);
+	}
+
+	//transmit the header messsage
+	const char *header_char = header.c_str();
+	std::cout << "converted to char = " << header_char << std::endl;
+
+	int send_result;
+	
+	send_result = send(header_char,header_length);
+	std::cout << "sent " << send_result << " bytes" << std::endl;
+
+	// next send the image data
+	send_result = send(data_buffer,data_length);
+	std::cout << "sent " << send_result << " bytes" << std::endl;
+	
+	std::cout << "process response" << std::endl;
+}
+
+
 tcp_client::tcp_client(){
 	
 	portno = 8192; //atoi(argv[2]);
@@ -45,17 +149,20 @@ tcp_client::tcp_client(){
     
 }
 
-int tcp_client::send(char *buffer,unsigned long bufferlength){
+int tcp_client::send(const char *buffer,unsigned int buffer_length){
 	
-	char *headerdata;
-	unsigned long headerlength = (unsigned long)create_header(&headerdata, bufferlength);
+	//char *headerdata;
+	//unsigned long headerlength = (unsigned long)create_header(&headerdata, bufferlength);
 
-    fprintf(stderr,"buffer to transmit, length = %lu\n", headerlength);
-    print_n(headerdata,5);
+    printf("buffer to transmit, length = %lu\n", buffer_length);
     
-    int n = write(sockfd,headerdata,headerlength);
+    int n = write(sockfd,buffer,buffer_length);
     if (n < 0) 
          error("ERROR writing header to socket");
+    
+    return n;
+}
+/*
          
     char answerbuffer[256];
     bzero(answerbuffer,256);
@@ -71,6 +178,8 @@ int tcp_client::send(char *buffer,unsigned long bufferlength){
          
     return 0;    
 }
+* */
+
 
 tcp_client::~tcp_client(){
 }

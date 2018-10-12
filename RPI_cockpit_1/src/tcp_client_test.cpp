@@ -29,7 +29,7 @@ int read_image( char **image, unsigned long *imagelen)
 
         //Open file
         FILE *file;
-        const char *fn="./test.jpeg";
+        const char *fn="../test.jpeg";
         fprintf(stderr, "opening file %s\n", fn);
 
         file = fopen(fn, "rb");
@@ -84,14 +84,16 @@ int main(int argc, char *argv[])
     fprintf(stderr, "return from data fetch\n");
     fprintf(stderr, "image len %lu\n", imagelen);
     fprintf(stderr, "img addr %lu\n", (unsigned long)image);
-    //print_n(image,40);
-
+    
+    tcp.send_test_image(image, imagelen);
+    
+    /*
     if (res>0) return 1;
-
 
 	int result = tcp.send(image,imagelen);
 	if (result<0)
 		printf("error sending image %i\n",result);
+    */
     
     return 0;
 }

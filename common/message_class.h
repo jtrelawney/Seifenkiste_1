@@ -17,6 +17,7 @@
 class message_class {
 public:
 
+	/*
     // to organize the meta data
     struct header_info_type{
         int result;
@@ -31,30 +32,31 @@ public:
         header_info_type() : result(-1), message_type('u'), time_sent(0), sensor_type('u'), origin('u'), time_origin(0), data_length(0), databuffer(0){};
         void print_data(){ printf("header info data:\n"); };
         };
+     */
 
     //state in constructor starts with not_initialized, when the header is processed and all data is availble state goes to complete
     // if header is from source which sends more data status is set to waiting_for_buffer_data, and when the buffer has been transfered it is set to complete
     // any state with not initialized means error along the way
-    enum message_state_def {not_initialized, waiting_for_buffer_data, complete};
-
-	enum message_origin_def {undefined, imu, usonic1, camera1, time};
-    message_origin_def convert_to_message_origin(const char mtype);
-
-
-    //to be deleted once the infotype works
-	message_class(message_origin_def mtype, unsigned long buffersiz, unsigned long time, origin_type_def orig, unsigned long orig_time);
-	message_class(header_info_type header_info);
-
+    enum message_state_def {initialized, complete};
+	
+	// from raw data information create a message
+	message_class(sender_type_def sensor_platform, sensor_type_def sensortype, unsigned int sensor_time, unsigned int data_length);
+	
 private:
 
+	// keep the own state, desc see above
     message_state_def state;
 
-    unsigned long time_sent;
-    char sensor_type;
-    message_origin_def data_origin;
-    unsigned long time_origin;
-    unsigned long data_length;
-    char *data_buffer;
+	// sensor platform
+	sender_type_def sensor_platform;
+	// sensor type
+	sensor_type_def sensor_type;
+	// sensor time
+	unsigned long sensor_time;
+	// data length
+	unsigned int data_length;
+	// ptr to databuffer
+	char *data_buffer;
 
 	message_class();
 
