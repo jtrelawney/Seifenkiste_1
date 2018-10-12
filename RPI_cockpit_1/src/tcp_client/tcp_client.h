@@ -16,6 +16,13 @@
 #include <string.h>
 #include <unistd.h> 
 
+#include <sstream>
+
+
+
+
+#include <message_class.h>
+
 class tcp_client{
 	
 private:
@@ -27,10 +34,15 @@ private:
 	void error(const char *msg);
 	void print_n(char *data, int n);
 	int create_header(char **sessioninfo, unsigned long imagelen);
+	
+	int send(const char *buffer,unsigned int length);
 
 public:
 	tcp_client();
 	~tcp_client();
 	
-	int send(char *buffer,unsigned long length);
+	    
+	void send_test_image(char *image, unsigned long imagelen);
+	int send(message_class message);
+	
 };
