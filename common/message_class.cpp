@@ -9,7 +9,7 @@
 
 message_class::message_class(
         sender_type_def sender, time_format sender_time, 
-        sender_type_def sensor_platform, sensor_type_def sensortype, unsigned int sensor_time, 
+        sender_type_def sensor_platform, sensor_type_def sensor_type, time_format sensor_time, 
         unsigned int data_length){
 
 	//state
@@ -21,14 +21,13 @@ message_class::message_class(
 	// sensor platform
 	this->sensor_platform = sensor_platform;
 	// sensor type
-	this->sensor_type = sensortype;
+	this->sensor_type = sensor_type;
 	// sensor time
 	this->sensor_time = sensor_time;
 	// data length
 	this->data_length = data_length;
 	// ptr to databuffer
 	data_buffer = (char *) malloc(data_length);
-
 }
 
 message_class::message_state_def message_class::get_state(){
@@ -53,7 +52,7 @@ void message_class::print_meta_data(){
 	printf("sensor_platform %c\n",sensor_platform);	
     printf("sensor_type %c\n",sensor_type);
     printf("sensor_time %lu\n",sensor_time);
-	printf("data_length %lu\n",data_length);
+	printf("data_length %u\n",data_length);
     printf("data buffer address %lu\n",(unsigned long) data_buffer);
 }
 
@@ -65,7 +64,7 @@ message_class::~message_class() {
 
 int message_class::write_to_file(const char *fn){
 
-    printf("writing %lu bytes from buffer %lu into file\n", data_length, (unsigned long)data_buffer);
+    printf("writing %u bytes from buffer %lu into file\n", data_length, (unsigned long)data_buffer);
 
 	FILE *file;
 	file = fopen(fn,"w");

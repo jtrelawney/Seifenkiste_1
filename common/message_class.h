@@ -27,10 +27,10 @@ public:
 	message_class(
             sender_type_def sender, time_format sender_time, 
             sender_type_def sensor_platform, sensor_type_def sensor_type, time_format sensor_time,
-            unsigned long data_length);
+            unsigned int data_length);
 
 	// from raw data information create a message
-	message_class(sender_type_def sensor_platform, sensor_type_def sensortype, unsigned int sensor_time, unsigned int data_length);
+	//message_class(sender_type_def sensor_platform, sensor_type_def sensortype, unsigned int sensor_time, unsigned int data_length);
 	
 private:
 
