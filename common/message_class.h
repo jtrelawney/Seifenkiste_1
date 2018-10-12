@@ -17,24 +17,6 @@
 class message_class {
 public:
 
-
-    /*
-    // to organize the meta data
-    struct header_info_type{
-        int result;
-        char message_type;              // either l or s   (long or short)
-        unsigned int time_sent;         // time when message was sent
-        char sensor_type;                 // camera, usensor, imu, etc
-        char origin;                    // source of message / data, arduino, jetson, rpi, etc
-        unsigned int time_origin;       // time at origin when data was collected
-        unsigned int data_length;    // length of data segment
-        char *databuffer;               // reserved memory for the data
-
-        header_info_type() : result(-1), message_type('u'), time_sent(0), sensor_type('u'), origin('u'), time_origin(0), data_length(0), databuffer(0){};
-        void print_data(){ printf("header info data:\n"); };
-        };
-    */
-
     // message states
     // starts with initialized, when the header data is set
     // only if the data message is correctly recieved the state changes to complete
@@ -47,34 +29,29 @@ public:
             sender_type_def sensor_platform, sensor_type_def sensor_type, time_format sensor_time,
             unsigned long data_length);
 
-
-	//sensor_type_def convert_to_message_origin(const char mtype);
-    //to be deleted once the infotype works
-	//message_class(sensor_type_def mtype, unsigned long buffersiz, unsigned long time, origin_type_def orig, unsigned long orig_time);
-	//message_class(header_info_type header_info);
-
+	// from raw data information create a message
+	message_class(sender_type_def sensor_platform, sensor_type_def sensortype, unsigned int sensor_time, unsigned int data_length);
+	
 private:
 
     /*------------------------------------------------------------------------------*/
+
+	// keep the own state, desc see above
     message_state_def state;
 
     sender_type_def sender;
     unsigned long sender_time;
 
-    sender_type_def sensor_platform;
-    sensor_type_def sensor_type;
-    unsigned long sensor_time;
-
-    unsigned long data_length;
-    char *data_buffer;
-
-
-    /*
-    char sensor_type;
-    message_origin_def data_origin;
-    unsigned long time_origin;
-    unsigned long data_length;
-    */
+	// sensor platform
+	sender_type_def sensor_platform;
+	// sensor type
+	sensor_type_def sensor_type;
+	// sensor time
+	unsigned long sensor_time;
+	// data length
+	unsigned int data_length;
+	// ptr to databuffer
+	char *data_buffer;
 
 	message_class(){exit(0);};
 

@@ -9,6 +9,7 @@
 #define COMMON_DEFS_H_
 
 typedef unsigned int time_format;
+unsigned long get_timestamp();
 
 // enums
 enum sender_type_def {undefined_platform, arduino, rpi, jetson, pc};
