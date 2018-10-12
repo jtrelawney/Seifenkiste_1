@@ -41,7 +41,7 @@ void tcp_client::send_test_image(char *image, unsigned long imagelen){
 	char *data_buffer = image;
 
 	// initialize a new message - doesnt need the sesnor information and buffer ptr
-	message_class test_message(sensor_platform, sensortype, sensor_time, data_length);
+	message_class test_message(sender, current_time, sensor_platform, sensortype, sensor_time, data_length);
 	
 	// prepare header message using a stream buffer which to fill with the relevant data
 	std::stringstream buffer;
