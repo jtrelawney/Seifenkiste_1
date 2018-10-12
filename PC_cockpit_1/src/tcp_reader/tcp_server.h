@@ -18,6 +18,8 @@
 #include <stdlib.h>
 //#include <strings.h>
 #include <string.h>
+#include <iostream>
+
 #include <unistd.h>
 
 #include <message_class.h>
@@ -48,6 +50,9 @@ private:
     //debug routines
 	void error(const char *msg);
 	void print_buffer(const char *buffer, const int n);
+
+
+    int read_TCP_data(char **data_buffer, unsigned int data_length);
 
 public:
 

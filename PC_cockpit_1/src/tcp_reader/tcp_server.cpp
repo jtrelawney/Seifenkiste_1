@@ -7,119 +7,39 @@
 
 #include <tcp_server.h>
 
+template <typename T>
+T extract(const char *buffer, T variable, const unsigned int n=1){
 
+    unsigned int size = sizeof(variable);
+    T result;
+    memcpy(&result, buffer, size * n);
+
+    printf("buffer addr %lu\n", (unsigned long) buffer);
+    printf("n = %i\n", n);
+    printf("size of T = %i\n", size);
+    printf("result = %s\n", result);
+    return result;
+}
+
+// this assumes the full header information is available and not send over several packages
+// the length should be fixed, 21 bytes
 message_class* tcp_server::extract_header(const char *header_buffer, const int header_length){
 
+    if (header_length!=21){
+        printf("header length is %i , not 21 , is something wrong or was the header spit up?\n",header_length);
+    }
+
     message_class *result_message=NULL;
-    message_class::header_info_type info;
-    char *seg_ptr;
-    unsigned int seg_length;
-    
-    // extract control segment identifier, currently it is "con"
+
+    // set ptr to start of header buffer
+    char *seg_ptr = const_cast<char*> (&header_buffer[0]);
+
+    // extract the first segment from the buffer -> control segment "con", then compare to validate the header start
 	char comp[]="con";
-	char command[]="000";
+    char *segment1;
+    segment1 = extract(seg_ptr, comp, 3);
 
-    seg_ptr = const_cast<char*> (&header_buffer[0]);
-    seg_length = 3*sizeof(char);
-
-    //memcpy(&command[0],&header_buffer[0],3*sizeof(char);
-	memcpy(&command[0],seg_ptr,seg_length);
-    seg_ptr+=seg_length;
-
-	if (strncmp(command,comp,3)==0) {
-        printf("control segment reiceived : %s\n",command);
-
-        // extract the message type, can only be either s or l
-        char message_type;
-        seg_length = sizeof(char);
-    	memcpy(&message_type,seg_ptr,seg_length);
-	    seg_ptr+=seg_length;
-
-        // extract the time of sent
-        unsigned int time_sent;
-        seg_length = sizeof(time_sent);
-    	memcpy(&time_sent,seg_ptr,seg_length);
-        seg_ptr+=seg_length;
-
-        // extract the data type
-        char sensor_type;
-    	seg_length = sizeof(sensor_type);
-    	memcpy(&sensor_type,seg_ptr,seg_length);
-        seg_ptr+=seg_length;
-
-        // extract the origin
-        char origin;
-    	seg_length = sizeof(origin);
-    	memcpy(&origin,seg_ptr,seg_length);
-        seg_ptr+=seg_length;
-
-        // extract the time at origin
-        unsigned int time_origin;
-        seg_length = sizeof(time_origin);
-    	memcpy(&time_origin,seg_ptr,seg_length);
-        seg_ptr+=seg_length;
-
-        //extract header information, carefull with platfrom difference  rpi is 32bit, pc is 64 bit
-	    // unsigned long rpi = 4 bytes
-	    // unsigned long pc = 8 bytes
-	    // -> use int on pc = 4 bytes
-	    unsigned int data_length;
-        seg_length = sizeof(data_length);
-        memcpy(&data_length,seg_ptr,seg_length);
-        seg_ptr+=seg_length;
-
-	    printf("messagetype = %c\n",message_type);
-        char *databuffer;
-        switch(message_type){
-            case 's':
-                printf("message type %c  = short message -> copy the data from header into message \n",message_type);
-                seg_length = data_length;
-                databuffer = seg_ptr;
-                seg_ptr+=seg_length;
-                // store the databuffer pointer into the info struct and call the message constructor where the data is then copied into the message;
-                break;
-            case 'l':
-                printf("message type %c  = long message -> reserve memory and receive the data from TCP \n",message_type);
-                databuffer = 0;
-                // set databuffer pointer to 0, call the message constructor where the memory is reserved for later data buffer read from TCP
-                break;
-            default:
-                printf("message type %c  = unknown -> retransmit\n",message_type);
-                exit(0);
-        }
-
-        // extract end segment identifier, currently it is "end"
-	    char comp_end[]="end";
-	    char seg_end[]="000";
-        seg_length = 4*sizeof(char);
-	    memcpy(&seg_end[0],seg_ptr,seg_length);
-        seg_ptr+=seg_length;
-        if (strncmp(seg_end,comp_end,3)==0) {
-            printf("end segment received : %s\n",seg_end);
-            printf("send confirmation\n");
-            exit(0);
-        } else {
-            printf("end segment not received : %s\n",seg_end);
-            printf("ask for retransmission\n");
-            exit(0);
-        }
-
-        info.result = 0;
-        info.message_type = message_type;
-        info.time_sent = time_sent;
-        info.sensor_type = sensor_type;
-        info.origin = origin;
-        info.time_origin = time_origin;
-        info.data_length = data_length;
-        info.databuffer = databuffer;
-
-        result_message = new message_class(info);
-        result_message -> print_meta_data();
-        exit(0);
-	
-    } else {
-		printf("not a control segment - command : %s\n",command);
-	}
+    printf("result = %s\n", segment1);
 
     return result_message;
 }
@@ -133,28 +53,102 @@ int tcp_server::send_response(int connectionfd, const char *response){
 // this function is the child process from the fork
 // it completely processes the TCP message and either queues a valid message
 // or in case of issues requests a retransmision
-void tcp_server::process_message(int connectionfd)
-{
+void tcp_server::process_message(int connectionfd){
+
     // read message header from the connection
     unsigned int max_header_length = MAX_HEAD_LENGTH;
     char header_buffer[MAX_HEAD_LENGTH];
     bzero(header_buffer,MAX_HEAD_LENGTH);
     int header_length = read(connectionfd,header_buffer,max_header_length-1);
+    printf("message header length = %i\n", header_length);
+
     if (header_length < 0)
         error("ERROR reading message header from connection");
-    printf("message header length = %i\n", header_length);
+    if (header_length !=21)
+        error("ERROR message header too short");
+    
     printf("how to determine if this message is actually longer than the a valid control packet? how to reset the connection in this case???\n");
 
-    // extract the message header info from the message
-    message_class *new_message = extract_header(header_buffer, header_length);
+    std::string header_message(header_buffer, header_length);
 
-    new_message->print_meta_data();
+    // validate the control segments
+    std::string con_seg_start = "con";
+    int lstart = con_seg_start.length();
+    bool start_match = header_message.compare(0,lstart,con_seg_start);
+    
+    std::string con_seg_end = "end";
+    int lend = con_seg_end.length();
+    bool end_match = header_message.compare(21-lend,lend,con_seg_end);
+
+    std::cout << "header = " << header_message << std::endl;
+    std::cout << "start seg = " << con_seg_start << std::endl;
+    std::cout << "lstart = " << lstart << std::endl;
+    std::cout << "match = " <<  start_match << std::endl;
+    std::cout << "end seg = " << con_seg_end << std::endl;
+    std::cout << "lend = " << lend << std::endl;
+    std::cout << "match = " <<  end_match << std::endl;
+
+    if (start_match != 0){
+        std::cout << "control segment start doesn't match" << std::endl;
+        exit(0);
+    }
+
+    if (end_match != 0){
+        std::cout << "control segment end doesn't match" << std::endl;
+        exit(0);
+    }
+    
+    std::cout << "control segments match" << std::endl;
+     
+    // extract the message header info from the message
+
+    // sender
+    sender_type_def sender;
+    sender = static_cast<sender_type_def> ( (header_message[3])-char('0') );
+    std::cout << "sender = " << sender << "     " << header_message[3] << std::endl;
+    if ( sender == sender_type_def::rpi) std::cout << "ok" << std::endl;
+
+    // time sent
+    time_format sender_time;
+    memcpy(&sender_time, &header_buffer[4],4);
+    std::cout << "sender_time = " << sender_time << std::endl;
+
+    // sensor platform
+    sender_type_def sensor_platform;
+    sensor_platform = static_cast<sender_type_def> ( (header_message[8])-char('0') );
+    std::cout << "sensor_platform = " << sensor_platform << std::endl;
+
+    // sensor_type
+    sensor_type_def sensor_type;
+    sensor_type = static_cast<sensor_type_def> ( (header_message[9])-char('0') );
+    std::cout << "sensor_type = " << sensor_type << std::endl;
+
+    // sensor time
+    time_format sensor_time;
+    memcpy(&sensor_time, &header_buffer[10],4);
+    std::cout << "sensor_time = " << sensor_time << std::endl;
+
+    // time sent
+    time_format data_length;
+    memcpy(&data_length, &header_buffer[14],4);
+    std::cout << "data_length = " << data_length << std::endl;
+
+    message_class new_message(sender, sender_time, sensor_platform,sensor_type,sensor_time,data_length);
+    new_message.print_meta_data();
+
+    char *data_buffer = new_message.get_data_buffer_ptr();
+
+    int result = read_TCP_data(&data_buffer,data_length);
+
+    new_message.write_to_file();
+
 
     // get the state of the message and follow up accordingly
-    message_class::message_state_def message_state = new_message -> get_state();
+    //message_class::message_state_def message_state = new_message.get_state();
 
     // if state is messed up then drop the message and request a retransmission
-    if (message_state ==  message_class::message_state_def::not_initialized) {
+    /*
+    if (message_state ==  message_class::message_state_def::initialized) {
         printf("message status undefined - something is wrong !\n");
         printf("drop message and request restransmission\n");
 
@@ -223,8 +217,59 @@ void tcp_server::process_message(int connectionfd)
     if (message_state ==  message_class::message_state_def::complete) {
         printf("message is complete, add to queue and be done\n");
     }
+    */
 
     exit(0);
+}
+
+int tcp_server::read_TCP_data(char **data_buffer, unsigned int data_length){
+
+        printf("message is waiting for data ... extract from buffer\n");
+
+        // determine how long the message is going to be and ask for the pointer to the memory the message object has reserved
+        unsigned long message_length = data_length;
+        unsigned long remaining_message_length = message_length;
+        char *message_buffer = *data_buffer;
+        printf("fetch %lu bytes from TCP and store in image buffer addr %lu\n",message_length,(unsigned long)message_buffer);
+
+        if(message_length<1) {
+            error("ERROR waiting for data but expecting data of length <1 !");
+        }
+
+        // previoulsy a handshake after receiving hte header, now removed
+        //int s = send_response(connectionfd,"gotheader");
+        //if (s < 0) error("ERROR writing header response to socket");
+
+        // keep reading from the connection until the required number of bytes is achieved
+        // count up the memory pointer accordingly
+        if(message_length>0) {
+            unsigned long count_bytes = 0;
+            char *data_ptr = message_buffer;
+            char *new_data_ptr;
+            int n;
+
+            while (count_bytes<remaining_message_length){
+                n = read(connectionfd,data_ptr,remaining_message_length);
+                if (n < 0) {
+                   error("ERROR reading data from socket");
+                } else if (n==0) {
+                    //printf("message received completely\n");
+                    //return;
+                    //exit(0);
+                } else {
+                    printf("received %i bytes, written from %lu  to %lu\n",n,count_bytes,count_bytes+n);
+                    new_data_ptr = data_ptr + n;
+                    printf("increasing buffer from %lu to %lu\n",(unsigned long)data_ptr,(unsigned long)new_data_ptr);
+                    count_bytes+=n;
+                    data_ptr = new_data_ptr;
+                }
+           }
+
+           printf("data bytes received %lu\n",count_bytes);
+            int s = send_response(connectionfd,"okokokok");
+            if (s < 0) error("ERROR writing confirmation response to socket");
+           //int result = new_message -> write_to_file();
+        }
 }
 
 // this routine accepts a connection on the listening port (i.e. gets a filedescriptor) and then forks a child 
@@ -309,6 +354,7 @@ tcp_server::tcp_server(int portnumber): portno(portnumber){
 
 tcp_server::~tcp_server() {
 	// TODO Auto-generated destructor stub
+    close(sockfd);
 }
 
 void tcp_server::error(const char *msg)

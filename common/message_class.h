@@ -17,6 +17,8 @@
 class message_class {
 public:
 
+
+    /*
     // to organize the meta data
     struct header_info_type{
         int result;
@@ -31,32 +33,50 @@ public:
         header_info_type() : result(-1), message_type('u'), time_sent(0), sensor_type('u'), origin('u'), time_origin(0), data_length(0), databuffer(0){};
         void print_data(){ printf("header info data:\n"); };
         };
+    */
 
-    //state in constructor starts with not_initialized, when the header is processed and all data is availble state goes to complete
-    // if header is from source which sends more data status is set to waiting_for_buffer_data, and when the buffer has been transfered it is set to complete
-    // any state with not initialized means error along the way
-    enum message_state_def {not_initialized, waiting_for_buffer_data, complete};
+    // message states
+    // starts with initialized, when the header data is set
+    // only if the data message is correctly recieved the state changes to complete
+    enum message_state_def {initialized, complete};
 
-	enum message_origin_def {undefined, imu, usonic1, camera1, time};
-    message_origin_def convert_to_message_origin(const char mtype);
+    // initialize message obj called with the data in the header
+    // only if the data message is successfully received the state changes to complete
+	message_class(
+            sender_type_def sender, time_format sender_time, 
+            sender_type_def sensor_platform, sensor_type_def sensor_type, time_format sensor_time,
+            unsigned long data_length);
 
 
+	//sensor_type_def convert_to_message_origin(const char mtype);
     //to be deleted once the infotype works
-	message_class(message_origin_def mtype, unsigned long buffersiz, unsigned long time, origin_type_def orig, unsigned long orig_time);
-	message_class(header_info_type header_info);
+	//message_class(sensor_type_def mtype, unsigned long buffersiz, unsigned long time, origin_type_def orig, unsigned long orig_time);
+	//message_class(header_info_type header_info);
 
 private:
 
+    /*------------------------------------------------------------------------------*/
     message_state_def state;
 
-    unsigned long time_sent;
+    sender_type_def sender;
+    unsigned long sender_time;
+
+    sender_type_def sensor_platform;
+    sensor_type_def sensor_type;
+    unsigned long sensor_time;
+
+    unsigned long data_length;
+    char *data_buffer;
+
+
+    /*
     char sensor_type;
     message_origin_def data_origin;
     unsigned long time_origin;
     unsigned long data_length;
-    char *data_buffer;
+    */
 
-	message_class();
+	message_class(){exit(0);};
 
 public:
     message_state_def get_state();
