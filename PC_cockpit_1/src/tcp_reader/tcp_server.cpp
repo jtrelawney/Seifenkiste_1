@@ -7,178 +7,27 @@
 
 #include <tcp_server.h>
 
-template <typename T>
-T extract(const char *buffer, T variable, const unsigned int n=1){
-
-    unsigned int size = sizeof(variable);
-    T result;
-    memcpy(&result, buffer, size * n);
-
-    printf("buffer addr %lu\n", (unsigned long) buffer);
-    printf("n = %i\n", n);
-    printf("size of T = %i\n", size);
-    printf("result = %s\n", result);
-    return result;
-}
-
-int tcp_server::send_response(int connectionfd, const char *response){
-    int count = strlen(response);
-    int n = write(connectionfd,response,count);
+int tcp_server::send_response(int connectionfd, const char *response, int length){
+    int n = write(connectionfd,response,length);
     return n;
 }
 
+// read the next header message from TCP
+// may encounter issues with partiallly transmitted headers, i.e. when the TCP buffer only contains part of the header and the rest is being transmitted
 int tcp_server::read_TCP_header(char **header_buffer){
-
-    #define HEADER_LENGTH 21
 
     // read header from buffer and validate its length
     bzero(*header_buffer, HEADER_LENGTH);
     int header_length = read(connectionfd, *header_buffer, HEADER_LENGTH);
+
     printf("message header length = %i\n", header_length);
 
     if (header_length < 0)
         error("ERROR reading message header from connection");
-    if (header_length !=21)
+    if (header_length !=HEADER_LENGTH)
         error("ERROR message header too short");
 
-    //printf("how to determine if this message is actually longer than the a valid control packet? how to reset the connection in this case???\n");
-
     return header_length;
-}
-
-// this function is the child process from the fork
-// it completely processes the TCP message and either queues a valid message
-// or in case of issues requests a retransmision
-void tcp_server::process_messages(int connectionfd){
-
-    int result=-1;
-
-    // prepare buffer
-    unsigned int max_header_length = MAX_HEAD_LENGTH;
-    char buffer[MAX_HEAD_LENGTH];
-    char *header_buffer = &buffer[0];
-    int header_length = -1;
-
-    // keep reading messages, which should be alternating between a header message and a data message
-    printf("starting receiver loop ...\n");
-
-    int N=5;
-    while(N>0){
-
-        std::cout << "\n\nreceiver loop - messages left to receive = " << N << "\n\n" << std::endl;
-
-        // read header from TCP and validate correct length
-        result = read_TCP_header(&header_buffer);
-        if (result<0) {
-            std::cout << "error processing header message" << std::endl;
-            perror("quitting receiver loop with error in header message length");
-        }
-
-        header_length = result;
-        
-        // process header, i.e. extract its segments and initialize a new message accordingly
-        std::string header_message(header_buffer, header_length);
-        std::cout << "creating header message string = " << header_message << std::endl;
-
-        message_class new_message = process_header_message(header_message);
-        new_message.print_meta_data();
-
-        // read data message and copy the data into the message
-        char *data_buffer = new_message.get_data_buffer_ptr();
-        unsigned int data_length = new_message.get_data_length();
-
-        result = read_TCP_data(&data_buffer,data_length);
-        if (result<0) {
-            std::cout << "error processing data message" << std::endl;
-            perror("quitting receiver loop with error in data message");
-        }
-
-        // queue message, for now just write the file
-        std::string fname = "./test_"+std::to_string(N)+".jpeg";
-        new_message.write_to_file(fname.c_str());
-        N--;
-
-    }
-
-    std::cout << "the endless TCP message processing loop was broken, we shouldn't be here ..." << std::endl;
-    //exit(0);
-}
-
-message_class tcp_server::process_header_message(std::string header_message){
-
-    // validate the control segments
-    std::string con_seg_start = "con";
-    int lstart = con_seg_start.length();
-    bool start_match = header_message.compare(0,lstart,con_seg_start);
-    
-    std::string con_seg_end = "end";
-    int lend = con_seg_end.length();
-    bool end_match = header_message.compare(21-lend,lend,con_seg_end);
-
-    std::cout << "header = " << header_message << std::endl;
-    std::cout << "start seg = " << con_seg_start << std::endl;
-    std::cout << "lstart = " << lstart << std::endl;
-    std::cout << "match = " <<  start_match << std::endl;
-    std::cout << "end seg = " << con_seg_end << std::endl;
-    std::cout << "lend = " << lend << std::endl;
-    std::cout << "match = " <<  end_match << std::endl;
-
-    if (start_match != 0){
-        std::cout << "control segment start doesn't match" << std::endl;
-        exit(0);
-    }
-
-    if (end_match != 0){
-        std::cout << "control segment end doesn't match" << std::endl;
-        exit(0);
-    }
-    
-    std::cout << "control segments match" << std::endl;
-     
-    // extract the message header info from the message
-
-    // sender
-    sender_type_def sender;
-    sender = static_cast<sender_type_def> ( (header_message[3])-char('0') );
-    std::cout << "sender = " << sender << "     " << header_message[3] << std::endl;
-    if ( sender == sender_type_def::rpi) std::cout << "ok" << std::endl;
-
-    // time sent
-    //std::string time_extract = header_message.substr (4,4);
-    //std::cout << "extract 4 bytes = " << time_extract << std::endl;
-    //time_format sender_time = convert_string_to_time(time_extract);
-    time_format sender_time;
-    memcpy(&sender_time, &header_message[4],4);
-    std::cout << "sender_time = " << sender_time << std::endl;
-
-    // sensor platform
-    sender_type_def sensor_platform;
-    sensor_platform = static_cast<sender_type_def> ( (header_message[8])-char('0') );
-    std::cout << "sensor_platform = " << sensor_platform << std::endl;
-
-    // sensor_type
-    sensor_type_def sensor_type;
-    sensor_type = static_cast<sensor_type_def> ( (header_message[9])-char('0') );
-    std::cout << "sensor_type = " << sensor_type << std::endl;
-
-    // sensor time
-    time_format sensor_time;
-    memcpy(&sensor_time, &header_message[10],4);
-    //time_extract = header_message.substr (10,4);
-    //time_format sensor_time = convert_string_to_time(time_extract);
-    std::cout << "sensor_time = " << sensor_time << std::endl;
-
-    // data length
-    unsigned int data_length;
-    memcpy(&data_length, &header_message[14],4);
-    //std::string length_extract = header_message.substr (14,4);
-    //unsigned int data_length = std::stol (length_extract,NULL);;
-    std::cout << "data_length = " << data_length << std::endl;
-
-    // from the info initialize and return a new message
-    // this also assinge the memory for the message according to the length
-    message_class new_message(sender, sender_time, sensor_platform, sensor_type, sensor_time, data_length);
-    return new_message;
 }
 
 int tcp_server::read_TCP_data(char **data_buffer, unsigned int data_length){
@@ -227,15 +76,173 @@ int tcp_server::read_TCP_data(char **data_buffer, unsigned int data_length){
                 }
             }
 
-            printf("data bytes received %lu\n",count_bytes);
-            int s = send_response(connectionfd,"okokokok");
-            if (s < 0) {
-                std::cout << "ERROR writing confirmation response to socket" << std::endl;
-                return -1;
-            }
+        printf("data bytes received %lu\n",count_bytes);
         }
     return 0;
 }
+
+
+// this function is the child process from the fork
+// it completely processes the TCP message and either queues a valid message
+// or in case of issues requests a retransmision
+void tcp_server::process_messages(int connectionfd){
+
+    int result=-1;
+
+    // prepare buffer
+    unsigned int max_header_length = MAX_HEAD_LENGTH;
+    char buffer[MAX_HEAD_LENGTH];
+    char *header_buffer = &buffer[0];
+    int header_length = -1;
+
+    // keep reading messages, which should be alternating between a header message and a data message
+    printf("starting receiver loop ...\n");
+
+    int N=5;
+    while(N>0){
+
+        std::cout << "\n\nreceiver loop - messages left to receive = " << N << "\n\n" << std::endl;
+
+        // read header from TCP and validate correct length
+        result = read_TCP_header(&header_buffer);
+        if (result<0) {
+            std::cout << "error processing header message" << std::endl;
+            perror("quitting receiver loop with error in header message length");
+        }
+
+        header_length = result;
+        
+        // process header, i.e. extract its segments and initialize a new message accordingly
+        std::string header_message(header_buffer, header_length);
+        std::cout << "creating header message string = " << header_message << std::endl;
+
+        message_class new_message = process_header_message(header_message);
+        new_message.print_meta_data();
+
+        // read data message and copy the data into the message
+        char *data_buffer = new_message.get_data_buffer_ptr();
+        unsigned int data_length = new_message.get_data_length();
+
+        result = read_TCP_data(&data_buffer,data_length);
+        if (result<0) {
+            std::cout << "error processing data message" << std::endl;
+            perror("quitting receiver loop with error in data message");
+        }
+
+        char ok[] = "okokok";
+        char resend[] = "resend";
+        unsigned int message_id = new_message.get_id();
+
+        char *response = (char *) malloc( 10*sizeof(char));
+        memcpy(&response[0],&ok,6);
+        //memcpy(*response[0],&resend,6);
+        memcpy(&response[6],&message_id,4);
+
+        int s = send_response(connectionfd,response,10);
+        if (s < 0) {
+            std::cout << "ERROR writing confirmation response to socket" << std::endl;
+        }
+
+        // queue message, for now just write the file
+        std::string fname = "./test_"+std::to_string(N)+".jpeg";
+        new_message.write_to_file(fname.c_str());
+        N--;
+
+    }
+
+    std::cout << "the endless TCP message processing loop was broken, we shouldn't be here ..." << std::endl;
+    //exit(0);
+}
+
+// this function extracts the header information from the TCP header message (i.e. the buffer) and 
+// initializes the message
+message_class tcp_server::process_header_message(std::string header_message){
+
+    // validate the control segments
+    std::string con_seg_start = "con";
+    int lstart = con_seg_start.length();
+    bool start_match = header_message.compare(0,lstart,con_seg_start);
+    
+    std::string con_seg_end = "end";
+    int lend = con_seg_end.length();
+    bool end_match = header_message.compare(25-lend,lend,con_seg_end);
+
+    /*
+    std::cout << "header = " << header_message << std::endl;
+    std::cout << "start seg = " << con_seg_start << std::endl;
+    std::cout << "lstart = " << lstart << std::endl;
+    std::cout << "match = " <<  start_match << std::endl;
+    std::cout << "end seg = " << con_seg_end << std::endl;
+    std::cout << "lend = " << lend << std::endl;
+    std::cout << "match = " <<  end_match << std::endl;
+    */
+
+    if (start_match != 0){
+        std::cout << "control segment start doesn't match" << std::endl;
+        exit(0);
+    }
+
+    if (end_match != 0){
+        std::cout << "control segment end doesn't match" << std::endl;
+        exit(0);
+    }
+    
+    std::cout << "header : control segments match" << std::endl;
+     
+    // extract the message header info from the message
+    // tried with string functions, however run into issues because of 0 termination (i.e. stringlength turns out too short)
+
+    // sender
+    sender_type_def sender;
+    sender = static_cast<sender_type_def> ( (header_message[3])-char('0') );
+    std::cout << "sender = " << sender << "     " << header_message[3] << std::endl;
+    if ( sender == sender_type_def::rpi) std::cout << "ok" << std::endl;
+
+    // time sent
+    //std::string time_extract = header_message.substr (4,4);
+    //std::cout << "extract 4 bytes = " << time_extract << std::endl;
+    //time_format sender_time = convert_string_to_time(time_extract);
+    time_format sender_time;
+    memcpy(&sender_time, &header_message[4],4);
+    std::cout << "sender_time = " << sender_time << std::endl;
+
+    // message id
+    unsigned int message_id;
+    memcpy(&message_id, &header_message[8],4);
+    std::cout << "message_id = " << message_id << std::endl;
+
+    // sensor platform
+    sender_type_def sensor_platform;
+    sensor_platform = static_cast<sender_type_def> ( (header_message[12])-char('0') );
+    std::cout << "sensor_platform = " << sensor_platform << std::endl;
+
+    // sensor_type
+    sensor_type_def sensor_type;
+    sensor_type = static_cast<sensor_type_def> ( (header_message[13])-char('0') );
+    std::cout << "sensor_type = " << sensor_type << std::endl;
+
+    // sensor time
+    time_format sensor_time;
+    memcpy(&sensor_time, &header_message[14],4);
+    //time_extract = header_message.substr (10,4);
+    //time_format sensor_time = convert_string_to_time(time_extract);
+    std::cout << "sensor_time = " << sensor_time << std::endl;
+
+    // data length
+    unsigned int data_length;
+    memcpy(&data_length, &header_message[18],4);
+    //std::string length_extract = header_message.substr (14,4);
+    //unsigned int data_length = std::stol (length_extract,NULL);;
+    std::cout << "data_length = " << data_length << std::endl;
+
+    // from the info initialize and return a new message
+    // this also assinge the memory for the message according to the length
+    message_class new_message(sender, sender_time, sensor_platform, sensor_type, sensor_time, data_length);
+    new_message.set_id(message_id);
+
+    return new_message;
+}
+
 
 // this routine accepts a connection on the listening port (i.e. gets a filedescriptor) and then forks a child 
 // the parent closes the connection and returns to continue the calling thread

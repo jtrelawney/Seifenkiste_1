@@ -9,17 +9,13 @@
 #define TCP_SERVER_H_
 
 #define MAX_HEAD_LENGTH 256
+#define HEADER_LENGTH 25
 
 #include <stdio.h>
-//#include <sys/types.h>
-//#include <sys/socket.h>
 #include <netinet/in.h>
-
 #include <stdlib.h>
-//#include <strings.h>
 #include <string.h>
 #include <iostream>
-
 #include <unistd.h>
 
 #include <message_class.h>
@@ -34,7 +30,7 @@ private:
     // interface routines
     int init_socket();          // init socket and listen
     int connect_to_socket();    // connect to socket and wait for message - blocking
-    int send_response(int connectionfd, const char *response);  //sends a response string
+    int send_response(int connectionfd, const char *response, int length);  //sends a response string
 
     // message processing routines
     
@@ -48,7 +44,6 @@ private:
     //debug routines
 	void error(const char *msg);
 	void print_buffer(const char *buffer, const int n);
-
 
     int read_TCP_header(char **header_buffer);
     int read_TCP_data(char **data_buffer, unsigned int data_length);

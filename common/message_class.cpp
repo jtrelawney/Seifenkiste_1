@@ -138,6 +138,11 @@ void message_class::set_id(unsigned int id){
     message_id = id;
 }
 
+unsigned int message_class::get_id(){
+    return message_id;
+}
+
+
 message_class::message_state_def message_class::get_state(){
     return state;
 }

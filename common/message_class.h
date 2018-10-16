@@ -63,6 +63,7 @@ private:
 public:
 
 	void set_id(unsigned int id);
+    unsigned int get_id();
 	int create_TCP_header(char *buffer);
 
     message_state_def get_state();
