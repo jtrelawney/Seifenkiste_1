@@ -30,70 +30,25 @@ int tcp_client::send_test_image(char *image, unsigned long imagelen){
 	// ptr to databuffer
 	char *data_buffer = image;
 
-	// initialize a new message - doesnt need the sesnor information and buffer ptr
+	// initialize a new message
 	message_class test_message(sender, current_time, sensor_platform, sensortype, sensor_time, data_length);
+	test_message.set_id(256);
+	test_message.print_meta_data();
 	
-	// prepare header message using a stream buffer which to fill with the relevant data
-	std::stringstream buffer;
-
-	// start segment
-	buffer << "con";
-
-	//sender = rpi
-	buffer << sender;
-
-	//  time sent = local time	
-	thebytes = (char *) &current_time;
-	length = sizeof(current_time);
-	for(int i=0; i<length; i++) { buffer << *(thebytes+i); }
-	for(int i=0; i<length; i++) { printf("%c   %c\n",thebytes[i],*(thebytes+i)); }
-
-	// sensor platform
-	buffer << sensor_platform;
-
-	// sensor type
-	buffer << sensortype;
-
-	// sensor time
-	thebytes = (char *) &sensor_time;
-	length = sizeof(sensor_time);
-	for(int i=0; i<length; i++) { buffer << *(thebytes+i); }
-	for(int i=0; i<length; i++) { printf("%c   %c\n",thebytes[i],*(thebytes+i)); }
+	//create header
+	int header_length = 25;
+	char *header = (char *) malloc(sizeof(char) * 26);
+	memset(&header[0],0,26);
+	int result = test_message.create_TCP_header(&header[0]);
 	
-	// data length
-	thebytes = (char *) &data_length;
-	length = sizeof(data_length);
-	for(int i=0; i<length; i++) { buffer << *(thebytes+i); }
-	for(int i=0; i<length; i++) { printf("%c   %c\n",thebytes[i],*(thebytes+i)); }
-
-	// end segment
-	buffer << "end";
-
-	/*
-	std::string tester;
-	buffer >> tester;
-	int test_length = tester.length();
-	std::cout << "tester = " <<  tester << "   length = " << test_length << std::endl; // tester.length() << std::endl;
-	exit(0);
-	*/
-	
-	// buffer completed now stream it into header
-	std::string header;
-	buffer >> header;
-
-	int header_length = header.length();
-	std::cout << "header = " <<  header << "   length = " << header_length << std::endl;
-	if (header_length!=21) {
-		std::cout << "message length doesn't match 21, what a worry" << std::endl;
-		exit(0);
+	for (int i=0; i<26; i++){
+		char c = header[i];
+		int ci = int(c);
+		printf("%i   %i   %c\n",i,ci,c);
 	}
-
-	//transmit the header messsage
-	const char *header_char = header.c_str();
-	std::cout << "converted to char = " << header_char << std::endl;
-
+	
 	int send_result;
-	send_result = send(header_char,header_length);
+	send_result = send(header,header_length);
 	if (send_result<0) {
 		std::cout << "error sending buffer" << std::endl;
 		return -2;

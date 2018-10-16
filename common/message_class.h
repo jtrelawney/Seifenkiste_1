@@ -14,6 +14,7 @@
 #include <iostream>
 
 #include <string>
+#include <sstream> // for stringstream
 
 #include <defs.h>
 
@@ -41,6 +42,7 @@ private:
 
 	// keep the own state, desc see above
     message_state_def state;
+	unsigned int message_id;
 
     sender_type_def sender;
     unsigned long sender_time;
@@ -59,15 +61,18 @@ private:
 	message_class(){exit(0);};
 
 public:
+
+	void set_id(unsigned int id);
+	int create_TCP_header(char *buffer);
+
     message_state_def get_state();
     unsigned long get_data_length();
     char *get_data_buffer_ptr();
 
-	virtual ~message_class();
-
     void print_meta_data();
-	//int writefile(unsigned long imagesize, char *image);
 	int write_to_file(const char *fn="./test.jpeg");
+
+	virtual ~message_class();
 };
 
 #endif /* COMMON_MESSAGE_CLASS_H_ */
