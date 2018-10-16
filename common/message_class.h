@@ -11,6 +11,9 @@
 #include <stdio.h>	//printf
 #include <stdlib.h>	//malloc,free
 #include <string.h> //memcpy
+#include <iostream>
+
+#include <string>
 
 #include <defs.h>
 

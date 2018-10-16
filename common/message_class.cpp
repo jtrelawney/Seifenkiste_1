@@ -57,7 +57,7 @@ void message_class::print_meta_data(){
 }
 
 message_class::~message_class() {
-	printf("releasing message buffer!");
+	std::cout << "message class - releasing message buffer!" << std::endl;
 	if (data_buffer!=NULL)
 			free (data_buffer);
 }

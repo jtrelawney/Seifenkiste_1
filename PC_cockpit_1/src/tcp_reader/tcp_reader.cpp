@@ -24,13 +24,13 @@
 int main(int argc, char *argv[])
 {
     //start the tcp server
-	tcp_server tcp;
+	tcp_server tcp(8192);
 	int result;
 
     // keep receiving messages, the processing happens in the function call where
     // the data is received and inserted in a message
     // this message is then inserted into the message queue
-	printf("starting message loop\n");
+	printf("starting server connection management loop\n");
 	while(1){
 		result = tcp.connect_and_receive();
 		if (result<0)
