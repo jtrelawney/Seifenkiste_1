@@ -18,13 +18,27 @@ add_library(COMMON_stuff ../common/defs.cpp)
 
 set(PPROJECT_SOURCES src/tcp_client/tcp_client.cpp src/tcp_client/tcp_client.h)
  
-add_executable(RPI_tcp_test src/tcp_client_test.cpp)
-target_link_libraries(RPI_tcp_test tcp_client)
-target_link_libraries(RPI_tcp_test messages)
-target_link_libraries(RPI_tcp_test COMMON_stuff)
+add_executable(RPI_tcp_test_message src/tcp_client_test_message.cpp)
+target_link_libraries(RPI_tcp_test_message tcp_client)
+target_link_libraries(RPI_tcp_test_message messages)
+target_link_libraries(RPI_tcp_test_message COMMON_stuff)
 
 
+add_executable(RPI_tcp_test_timer_messages src/tcp_client_test_timer_messages.cpp)
+target_link_libraries(RPI_tcp_test_timer_messages tcp_client)
+target_link_libraries(RPI_tcp_test_timer_messages messages)
+target_link_libraries(RPI_tcp_test_timer_messages COMMON_stuff)
 
+message(STATUS "building complex_timer and need to use the rt -library")
+
+find_library(
+    LIB_I_NEED rt
+    HINTS "path_to_library"
+)
+
+message(STATUS "Found 'external_lib' at: ${LIB_I_NEED}")
+#add_executable(complex_timer_test timers/complex_timer.cpp)
+target_link_libraries (RPI_tcp_test_timer_messages ${LIB_I_NEED})
 
 
 

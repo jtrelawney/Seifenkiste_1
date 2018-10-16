@@ -1,21 +1,11 @@
 #include <tcp_client.h>
 
-/*
- 	int n;
-
-
-    char buffer[256];
-    if (argc < 3) {
-       fprintf(stderr,"usage %s hostname port\n", argv[0]);
-       exit(0);
-    }
-*/
 
 #include <iostream>
 #include <cstdio>
 #include <stdio.h>
 
-void tcp_client::send_test_image(char *image, unsigned long imagelen){
+int tcp_client::send_test_image(char *image, unsigned long imagelen){
 
 	int length;
 	char *thebytes;
@@ -103,86 +93,184 @@ void tcp_client::send_test_image(char *image, unsigned long imagelen){
 	std::cout << "converted to char = " << header_char << std::endl;
 
 	int send_result;
-	
 	send_result = send(header_char,header_length);
+	if (send_result<0) {
+		std::cout << "error sending buffer" << std::endl;
+		return -2;
+	}
+	
 	std::cout << "sent " << send_result << " bytes" << std::endl;
 
 	// next send the image data
 	send_result = send(data_buffer,data_length);
+	if (send_result<0) {
+		std::cout << "error sending buffer" << std::endl;
+		return -2;
+	}
+
 	std::cout << "sent " << send_result << " bytes" << std::endl;
 	
-	std::cout << "process response" << std::endl;
+	std::cout << "\n\n\nimplement the process response\n\n\n" << std::endl;
+	
+	return 0;
 }
 
-
-tcp_client::tcp_client(){
+		
+void tcp_client::process_error(){
 	
-	portno = 8192; //atoi(argv[2]);
-	char addr[] = "192.168.0.15";
-    server_addr = addr;
-    
+	return;
+	
+	switch(tcp_state){
+		
+		case tcp_not_initialized:
+			tcp_client::error("ERROR TCP not initialized");
+			break;
+		case socket_error:
+			tcp_client::error("ERROR opening socket");
+			break;
+		case gethost_error:
+			tcp_client::error("ERROR, no such host");
+			break;
+		case connect_error:
+			tcp_client::error("ERROR, can't connect to port");
+			break;
+		default:
+			std::cout << "tcp state is ok" << std::endl;
+	}
+}
+
+int tcp_client::create_socketfd(){
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) 
-        tcp_client::error("ERROR opening socket");
-    
-    server = gethostbyname(server_addr); //gethostbyname(argv[1]);
+    if (sockfd < 0)
+		tcp_state = socket_error;
+		
+	return sockfd;
+}
+
+int tcp_client::get_hostname(char *server_addr){
+	
+	int result = 0;
+    printf("gethostname for server address = %s\n",server_addr);
+
+	// fill class member
+	server = gethostbyname(server_addr); //gethostbyname(argv[1]);
+	bzero((char *) &serv_addr, sizeof(serv_addr));
 
     //fprintf(stderr,"server info\n");
     //char *h_add = server->h_addr;
     //fprintf(stderr,"server address = %s\n",h_add);
 
     if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
-    }
-    
-    bzero((char *) &serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, 
-         (char *)&serv_addr.sin_addr.s_addr,
-         server->h_length);
-    serv_addr.sin_port = htons(portno);
-    if (connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr)) < 0) 
-        error("ERROR connecting");
-        
-    printf("connected to %s on port %i\n",server_addr,portno);
-    
+        tcp_state = gethost_error;
+        result = -1;
+    } else {		
+		serv_addr.sin_family = AF_INET;
+		bcopy((char *)server->h_addr, 
+			 (char *)&serv_addr.sin_addr.s_addr,
+			 server->h_length);
+		serv_addr.sin_port = htons(portno);
+	}
+	
+    return result;
 }
 
-int tcp_client::send(const char *buffer,unsigned int buffer_length){
-	
-	//char *headerdata;
-	//unsigned long headerlength = (unsigned long)create_header(&headerdata, bufferlength);
+int tcp_client::TCP_connect(){
 
-    printf("buffer to transmit, length = %lu\n", buffer_length);
+    if (tcp_state != tcp_ready_to_connect) {
+		std::cout << "socket not ready to connect" << std::endl;
+		return -2;
+	}
+			
+	std::cout << "great, status is ready to connect" << std::endl;
+	int result = connect(sockfd,(struct sockaddr *)&serv_addr,sizeof(serv_addr));
+	if (result < 0) {
+		
+		std::cout << "error connecting " << std::endl;
+		tcp_state = connect_error;
+		return -1;
+	}
+		
+	std::cout << "connection ready" << std::endl;
+		
+	tcp_state = connection_ready;		
+	return 0;
+}
+
+int tcp_client::TCP_disconnect(){
+	
+	// if open then close and set the status ....
+	int result = close(sockfd);
+	
+	tcp_state = tcp_ready_to_connect;
+	
+	return result;
+}
+
+tcp_client::tcp_client(){
+	
+	tcp_state = tcp_not_initialized;
+	
+	sockfd = create_socketfd();
+    if (tcp_state==socket_error) process_error(); else {
+		std::cout << "socket fd created" << std::endl;
+		tcp_state = socket_fd_ready;
+	}
+
+	// member, im sure there is a shorter way ...	
+	char sadr[] = "192.168.0.15";
+	int l = strlen(sadr)+1;
+	server_addr = (char *) malloc(l*sizeof(char));
+	if (server_addr == NULL) exit(0);
+	memcpy(server_addr,sadr,l);
+	printf("serveraddress = %s   length = %i\n", sadr,l);
+	
+    portno = 8192; //atoi(argv[2]);
+    get_hostname(server_addr);
+    if (tcp_state==gethost_error) process_error(); else {
+		std::cout << "hostname resolved" << std::endl;
+		tcp_state = tcp_ready_to_connect;
+	}
+	
+	int result = TCP_connect();	
+	if (tcp_state==connect_error) {
+		process_error();
+	}
+    
+    
+    /*
+    connect_to_socket();
+	if (tcp_state==connect_error) process_error(); else tcp_state = connection_ready;
+	
+	if (tcp_state==connection_ready)
+		std::cout << "connected to " << server_addr << " on port " << portno << " established" << std::endl;
+	*/
+	
+}
+
+int tcp_client::send(const char *buffer, unsigned int buffer_length){
+	
+    printf("TCP - transmitting buffer, length = %lu\n", buffer_length);
+    
+	if (tcp_state!=connection_ready) {
+		std::cout << "TCP socket not ready for a connection" << std::endl;
+		return -1;
+	}
+	
+    std::cout << "connection to " << server_addr << " on port " << portno << " is ready" << std::endl;
     
     int n = write(sockfd,buffer,buffer_length);
     if (n < 0) 
-         error("ERROR writing header to socket");
-    
+         error("ERROR writing buffer to socket");
+         
     return n;
 }
-/*
-         
-    char answerbuffer[256];
-    bzero(answerbuffer,256);
-    n = read(sockfd,answerbuffer,255);
-    if (n < 0) 
-         error("ERROR reading answer from socket");
-    
-    printf("%s\n",answerbuffer);
-
-    n = write(sockfd,buffer,bufferlength);
-    if (n<0)
-		error("ERROR writing buffer to socket");
-         
-    return 0;    
-}
-* */
-
 
 tcp_client::~tcp_client(){
+	TCP_disconnect();
+	close(sockfd);
 }
+
+/* delete, this is in message class
 
 //takes pointer to char and creates the necessary memory space
 //the caller has to release the space
@@ -206,9 +294,10 @@ int tcp_client::create_header(char **sessioninfo, unsigned long imagelen){
     print_n(info,8);
     print_n(*sessioninfo,8);
     //print_n((unsigned char *) &test,4);
+    
     return infolength;
 }
-
+*/
 
 void tcp_client::print_n(char *data, int n)
 {
@@ -221,6 +310,6 @@ void tcp_client::print_n(char *data, int n)
 void tcp_client::error(const char *msg)
 {
     perror(msg);
-    exit(0);
+    //exit(0);
 }
 
