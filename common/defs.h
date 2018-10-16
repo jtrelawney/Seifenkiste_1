@@ -8,7 +8,12 @@
 #ifndef COMMON_DEFS_H_
 #define COMMON_DEFS_H_
 
+#include <string>
+
 typedef unsigned int time_format;
+
+time_format convert_string_to_time(std::string from_string);
+
 unsigned long get_timestamp();
 
 // enums

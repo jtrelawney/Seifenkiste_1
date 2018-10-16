@@ -40,18 +40,17 @@ private:
     
     // reads message from connection and processes header, creates message and reads data
     // either queues a complete message or requests retransmission
-    void process_message(int sock);                                         
+    void process_messages(int sock);
 
-    // from the message extract the header and initialize a message
-    // for short messages it inserts the data
-    // for long messages it reserves memory and the rest of the data will be fetched upon return to process message
-	message_class* extract_header(const char *buffer, const int length);
+    // processes a header message and returns an initialized message object
+    message_class process_header_message(std::string header_message);                                        
 
     //debug routines
 	void error(const char *msg);
 	void print_buffer(const char *buffer, const int n);
 
 
+    int read_TCP_header(char **header_buffer);
     int read_TCP_data(char **data_buffer, unsigned int data_length);
 
 public:
