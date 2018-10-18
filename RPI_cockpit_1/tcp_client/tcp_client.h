@@ -61,7 +61,7 @@ public:
 	~tcp_client();
 
 	// send message over TCP
-	int send(message_class message);
+	int send_message(message_class &message);
 	
 	// creates a test message and sends it over TCP	    
 	int send_test_image(char *image, unsigned long imagelen);

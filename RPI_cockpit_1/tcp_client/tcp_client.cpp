@@ -5,6 +5,44 @@
 #include <cstdio>
 #include <stdio.h>
 
+int tcp_client::send_message(message_class &message){
+	
+	//create header
+	char *header = (char *) malloc(sizeof(char) * TCP_HEADER_LENGTH);
+	int result = message.create_TCP_header(&header[0]);
+	
+	for (int i=0; i<TCP_HEADER_LENGTH; i++){
+		char c = header[i];
+		int ci = int(c);
+		printf("%i   %i   %c\n",i,ci,c);
+	}
+	
+	int send_result;
+	send_result = send(header,TCP_HEADER_LENGTH);
+	if (send_result<0) {
+		std::cout << "error sending buffer" << std::endl;
+		return -2;
+	}
+	
+	std::cout << "sent header , " << send_result << " bytes" << std::endl;
+	
+	
+	// next send the image data
+	unsigned int data_length = message.get_data_length();
+	char* data_buffer = message.get_data_buffer_ptr();
+	send_result = send(data_buffer,data_length);
+	if (send_result<0) {
+		std::cout << "error sending buffer" << std::endl;
+		return -2;
+	}
+
+	std::cout << "sent data , " << send_result << " bytes" << std::endl;
+	
+	std::cout << "\n\n\nimplement the process response\n\n\n" << std::endl;
+	
+	return 0;
+}
+
 int tcp_client::send_test_image(char *image, unsigned long imagelen){
 
 	int length;

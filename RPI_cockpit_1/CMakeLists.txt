@@ -11,7 +11,7 @@ add_library(tcp_client SHARED tcp_client/tcp_client.cpp)
 add_library(messages SHARED ../common/message_class.cpp)
 
 add_executable(camera_tcp_test dev_tests/camera_tcp_test.cpp)
-target_link_libraries (camera_tcp_test messages COMMON_stuff opencv_core opencv_highgui opencv_imgproc opencv_video opencv_videoio)
+target_link_libraries (camera_tcp_test messages COMMON_stuff tcp_client opencv_core opencv_highgui opencv_imgproc opencv_video opencv_videoio)
 
 add_executable(RPI_tcp_test_message dev_tests/tcp_client_test_message.cpp)
 target_link_libraries (RPI_tcp_test_message COMMON_stuff messages tcp_client)

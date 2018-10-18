@@ -21,7 +21,7 @@
 // to keep object specific params, tailored to 3*int
 #define SPECIAL_PARAMS_BUFFER_LENGTH 12
 
-
+// length of buffer to be transfered over TCP as header
 #define TCP_HEADER_LENGTH 37
 
 class message_class {

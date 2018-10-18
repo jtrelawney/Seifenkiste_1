@@ -1,11 +1,13 @@
 #include "opencv2/opencv.hpp"
-#include "defs.h"
-#include "message_class.h"
-#include <unistd.h>
+#include <defs.h>
+#include <message_class.h>
+#include <tcp_client.h>
+#include <unistd.h> // sleep
 
 using namespace cv;
 
 unsigned int image_counter;
+tcp_client TCP;
 
 void create_message(message_class **new_message, unsigned int message_id, time_format &sensor_time, unsigned int rows, unsigned int cols, unsigned int depth, char *image_data_buffer){
 
@@ -72,6 +74,7 @@ void prep(unsigned int current_time, unsigned int image_counter, Mat &frame){
         //printf("new_message ptr     address = %lu   value = %lu\n", (unsigned int)&new_message, (unsigned int)new_message);
 		create_message(&new_message,image_counter, current_time, rows, cols, depth, (char *) frame.data);
         //printf("new_message ptr     address = %lu   value = %lu\n", (unsigned int)&new_message, (unsigned int)new_message);
+        TCP.send_message(*new_message);
 		if (new_message != NULL) new_message->print_meta_data();
         if (new_message != NULL) delete new_message;
         //sleep(1);
