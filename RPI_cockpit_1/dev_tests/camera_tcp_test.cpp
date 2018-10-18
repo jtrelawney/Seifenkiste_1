@@ -34,6 +34,7 @@ void create_message(message_class **new_message, unsigned int message_id, time_f
 	test_message->set_id(message_id);
 	char* ptr = test_message->get_data_buffer_ptr();
 	memcpy(ptr,image_data_buffer,data_length);
+	printf("copied = %lu  bytes of data\n", data_length);
 	
 	// prepare the special params and copy them into the message
 	
@@ -115,6 +116,7 @@ int main(int, char**)
         //GaussianBlur(edges, edges, Size(7,7), 1.5, 1.5);
         //Canny(edges, edges, 0, 30, 3);
         //imshow("edges", edges);
+        if (image_counter>5) break;
         if(waitKey(30) >= 0) break;
     }
     // the camera will be deinitialized automatically in VideoCapture destructor

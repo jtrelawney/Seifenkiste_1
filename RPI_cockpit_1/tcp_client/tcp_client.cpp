@@ -14,7 +14,9 @@ int tcp_client::send_message(message_class &message){
 	for (int i=0; i<TCP_HEADER_LENGTH; i++){
 		char c = header[i];
 		int ci = int(c);
-		printf("%i   %i   %c\n",i,ci,c);
+		char sc = char(c);
+		unsigned char uc = (unsigned char) (c);
+		printf("%i   %c   %u   %c   %i\n",i, c, uc, sc, ci);
 	}
 	
 	int send_result;
@@ -29,6 +31,7 @@ int tcp_client::send_message(message_class &message){
 	
 	// next send the image data
 	unsigned int data_length = message.get_data_length();
+	std::cout << "going to send data , " << data_length << " bytes" << std::endl;
 	char* data_buffer = message.get_data_buffer_ptr();
 	send_result = send(data_buffer,data_length);
 	if (send_result<0) {
