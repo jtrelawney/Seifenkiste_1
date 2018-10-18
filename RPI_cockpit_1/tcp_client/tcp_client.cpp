@@ -8,7 +8,7 @@
 int tcp_client::send_test_image(char *image, unsigned long imagelen){
 
 	int length;
-	char *thebytes;
+	//char *thebytes;
 
 	// collect data for the test
 	

@@ -18,6 +18,12 @@
 
 #include <defs.h>
 
+// to keep object specific params, tailored to 3*int
+#define SPECIAL_PARAMS_BUFFER_LENGTH 12
+
+
+#define TCP_HEADER_LENGTH 37
+
 class message_class {
 public:
 
@@ -57,12 +63,16 @@ private:
 	unsigned int data_length;
 	// ptr to databuffer
 	char *data_buffer;
+	// ptr to param field of size 3 * int
+	char *special_param_buffer;
 
 	message_class(){exit(0);};
 
 public:
 
 	void set_id(unsigned int id);
+	void set_sender_time(time_format t);
+	int set_special_params(char *param_buffer, int length);
     unsigned int get_id();
 	int create_TCP_header(char *buffer);
 

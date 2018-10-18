@@ -5,7 +5,11 @@
  *      Author: ethan
  */
 
+#include <unistd.h> //sleep
 #include <message_class.h>
+void message_class::set_sender_time(time_format t){
+	sender_time = t;
+}
 
 int message_class::create_TCP_header(char *header_buffer){
 
@@ -20,7 +24,8 @@ int message_class::create_TCP_header(char *header_buffer){
 	memcpy(&header_buffer[13],&sensor_type,1);
 	memcpy(&header_buffer[14],&sensor_time,4);
 	memcpy(&header_buffer[18],&data_length,4);
-	memcpy(&header_buffer[22],&end,3);
+	memcpy(&header_buffer[22],&special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
+	memcpy(&header_buffer[34],&end,3);
 	return 0;
 	
 	/*
@@ -131,7 +136,18 @@ message_class::message_class(
 	// data length
 	this->data_length = data_length;
 	// ptr to databuffer
-	data_buffer = (char *) malloc(data_length);
+	this->data_buffer = (char *) malloc(data_length*sizeof(char));
+	
+	//parambuffer init to 0, can be set later
+	this->special_param_buffer = (char *) malloc(sizeof(char)*SPECIAL_PARAMS_BUFFER_LENGTH);
+	memset((this->special_param_buffer),0,SPECIAL_PARAMS_BUFFER_LENGTH);
+}
+
+int message_class::set_special_params(char *param_buffer, int length){
+	//printf("param_buffer ptr     address = %lu   value = %lu\n", (unsigned int)&param_buffer, (unsigned int)param_buffer);
+	//printf("special_param_buffer ptr     address = %lu   value = %lu\n", (unsigned int)&special_param_buffer, (unsigned int)special_param_buffer);
+	if (length>SPECIAL_PARAMS_BUFFER_LENGTH) return 1;
+	memcpy(special_param_buffer,param_buffer,length);
 }
 
 void message_class::set_id(unsigned int id){
@@ -141,7 +157,6 @@ void message_class::set_id(unsigned int id){
 unsigned int message_class::get_id(){
     return message_id;
 }
-
 
 message_class::message_state_def message_class::get_state(){
     return state;
@@ -157,6 +172,7 @@ char* message_class::get_data_buffer_ptr(){
 
 void message_class::print_meta_data(){
     printf("\n\nmessage metadata:\n");
+    printf("message ptr %lu\n",(unsigned int)this);	
     if (state == initialized) printf("message status = initialized\n");
     if (state == complete) printf("message status = complete\n");
 
@@ -168,12 +184,24 @@ void message_class::print_meta_data(){
     printf("sensor_time %lu\n",sensor_time);
 	printf("data_length %u\n",data_length);
     printf("data buffer address %lu\n",(unsigned long) data_buffer);
+    
+    printf("special param buffer = ");
+    for (int i=0; i<SPECIAL_PARAMS_BUFFER_LENGTH; i++){
+		char c = special_param_buffer[i];
+		int o = int(c);
+		printf("%i,",o);
+	}
+	printf("\n");
 }
 
 message_class::~message_class() {
-	std::cout << "message class - releasing message buffer!" << std::endl;
-	if (data_buffer!=NULL)
-			free (data_buffer);
+	std::cout << "\n\nmessage class - releasing message buffer!" << std::endl;
+    //printf("message ptr %lu\n",(unsigned int)this);	
+	free(special_param_buffer);
+	//std::cout << "after freeing special params, now freeing data buffer!" << std::endl;
+	//std::cout << "data ptr = " << (unsigned int) data_buffer << std::endl;
+	if (data_buffer!=NULL) free (data_buffer);
+	//printf("done ... \n");
 }
 
 int message_class::write_to_file(const char *fn){
