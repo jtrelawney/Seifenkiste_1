@@ -23,7 +23,7 @@ int message_class::create_TCP_header(char *header_buffer){
 	memcpy(&header_buffer[13],&sensor_type,1);
 	memcpy(&header_buffer[14],&sensor_time,4);
 	memcpy(&header_buffer[18],&data_length,4);
-	memcpy(&header_buffer[22],&special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
+	memcpy(&header_buffer[22],special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
 	memcpy(&header_buffer[34],&end,3);
 	return 0;
 }
@@ -215,8 +215,10 @@ int message_class::set_special_params(char *param_buffer, int length){
 	//printf("param_buffer ptr     address = %lu   value = %lu\n", (unsigned int)&param_buffer, (unsigned int)param_buffer);
 	//printf("special_param_buffer ptr     address = %lu   value = %lu\n", (unsigned int)&special_param_buffer, (unsigned int)special_param_buffer);
 	if (length>SPECIAL_PARAMS_BUFFER_LENGTH) return -1;
+	//print_buffer_content(special_param_buffer, SPECIAL_PARAMS_BUFFER_LENGTH);
 	memcpy(special_param_buffer,param_buffer,length);
-    return 0;
+	//print_buffer_content(special_param_buffer, SPECIAL_PARAMS_BUFFER_LENGTH);
+	return 0;
 }
 
 void message_class::set_id(unsigned int id){
