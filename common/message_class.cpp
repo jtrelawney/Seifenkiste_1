@@ -78,10 +78,9 @@ message_class::message_class(char *header_message, int header_length){
         //memset((this->special_param_buffer),0,SPECIAL_PARAMS_BUFFER_LENGTH);
 	    memcpy((this->special_param_buffer),&header_message[22],SPECIAL_PARAMS_BUFFER_LENGTH);
 
-        print_buffer_content(&header_message[22],SPECIAL_PARAMS_BUFFER_LENGTH);
-        print_buffer_content(this->special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
-
-    exit(0);
+        //print_buffer_content(&header_message[22],SPECIAL_PARAMS_BUFFER_LENGTH);
+        //print_buffer_content(this->special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
+        //exit(0);
 
         // done initializing, caller needs to add the data
         this->state = message_state_def::initialized;
@@ -241,18 +240,16 @@ char* message_class::get_data_buffer_ptr(){
 
 int message_class::extract_special_param_buffer(unsigned int *int1, unsigned int *int2, unsigned int *int3){
     if (special_param_buffer==NULL) return -1;
-
-    std::cout << "converting special param buffer to 3 unsinged ints" << std::endl;
-
-    print_buffer_content(this->special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
-    memcpy(&int1,&special_param_buffer[0],4);
-    memcpy(&int2,&special_param_buffer[4],4);
-    memcpy(&int3,&special_param_buffer[8],4);
+    //std::cout << "converting special param buffer to 3 unsinged ints" << std::endl;
+    //print_buffer_content(this->special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
+    memcpy(int1,&special_param_buffer[0],4);
+    memcpy(int2,&special_param_buffer[4],4);
+    memcpy(int3,&special_param_buffer[8],4);
     return 0;
 }
 
 void message_class::print_meta_data(){
-	printf("-------------------------\n");
+	printf("\n-------------------------\n");
     printf("\n\nmessage metadata:\n");
     printf("message ptr %lu\n",(unsigned long)this);	
     if (state == initialized) printf("message status = initialized\n");
@@ -268,14 +265,20 @@ void message_class::print_meta_data(){
     printf("data buffer address %lu\n",(unsigned long) data_buffer);
     
     printf("special param buffer = \n ");
+    printf("achtung : display int(unsigned char) conversion , what a mess\n ");
     //print_buffer_content(this->special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
 
     for (int i=0; i<SPECIAL_PARAMS_BUFFER_LENGTH; i++){
-		char c = special_param_buffer[i];
-		int o = int(c);
-		printf("%i,",o);
+        unsigned char uc = (unsigned char) special_param_buffer[i];
+		//char c = (unsigned char) special_param_buffer[i];
+	    //int o = int(c);
+        //int p = o & 0xFF;
+        
+        std::cout << int(uc) << " , ";
+		//printf("%u,",o);
 	}
-	printf("-------------------------\n");
+
+	printf("\n\n\n-------------------------\n");
 }
 
 message_class::~message_class() {

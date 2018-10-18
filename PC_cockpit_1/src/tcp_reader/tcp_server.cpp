@@ -121,21 +121,18 @@ void tcp_server::process_messages(int connectionfd){
         message_class new_message(header_message);
     */
         message_class new_message(header_buffer, header_length);
+        new_message.print_meta_data();        
 
-        new_message.print_meta_data();
 
-        
+        // from the special parameter section determine the image dimensions
+        unsigned int rows, cols, depth;
+        new_message.extract_special_param_buffer(&rows,&cols,&depth);
+        std::cout << "formated to : " << rows << " , " << cols << " , " << depth << std::endl;
 
         // read data message and copy the data into the message
         char *data_buffer = new_message.get_data_buffer_ptr();
         unsigned int data_length = new_message.get_data_length();
-
-        std::cout << "now waiting to recieve " << data_length << " data bytes " << std::endl;
-
-        unsigned int rows, cols, depth;
-        std::cout << "currently  : " << rows << " , " << cols << " , " << depth << std::endl;
-        new_message.extract_special_param_buffer(&rows,&cols,&depth);
-        std::cout << "formated to : " << rows << " , " << cols << " , " << depth << std::endl;
+        std::cout << "now waiting to receive " << data_length << " data bytes " << std::endl;
 
         result = read_TCP_data(&data_buffer,data_length);
         if (result<0) {
