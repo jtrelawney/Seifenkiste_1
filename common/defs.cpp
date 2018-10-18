@@ -13,13 +13,42 @@
 
 #include <iostream>
 
+
+int extract4ints(char *buffer,unsigned int *int1,unsigned int *int2,unsigned int *int3){
+    memcpy(int1,&buffer[0],4);
+    memcpy(int2,&buffer[4],4);
+    memcpy(int3,&buffer[8],4);
+    return 0;
+}
+
+void print_buffer_content(char *buffer, int length){
+    std::cout << "buffer content = " << std::endl;
+    if (length>50) {
+        std::cout << "max size is 50, length is " << length << std::endl;
+        return;
+    }
+        
+    for (int i=0; i<length; i++){
+        char c = buffer[i];
+        unsigned char uc = (unsigned char)(c);
+        char sc = (char)(c);
+        int ci = int(c);
+        //std::cout << i << "   " << c << "   " << uc << "   " << sc << "   " << ci << std::endl;
+        printf("%i   %c   %u   %c   %i\n",i,c,uc,sc,ci);
+    }
+}
+
 unsigned long get_timestamp(){
 	
-	struct timeval start, end;
-    long mtime, seconds, useconds;    
+    struct timeval start;
+    long mtime;
+    
 
     gettimeofday(&start, NULL);
     mtime = ((start.tv_sec) * 1000 + start.tv_usec/1000.0) + 0.5;
+
+	//struct timeval start, end;
+    //long mtime, seconds, useconds;    
 
     //usleep(20000);
     //gettimeofday(&end, NULL);

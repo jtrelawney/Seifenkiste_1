@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 
 project(PC_cockpit)
 
-SET(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11")
+SET(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11 -Wall")
 SET(GCC_COVERAGE_LINK_FLAGS    "-pthread")
 
 SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")

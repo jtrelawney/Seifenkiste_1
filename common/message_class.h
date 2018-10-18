@@ -28,19 +28,33 @@ class message_class {
 public:
 
     // message states
-    // starts with initialized, when the header data is set
-    // only if the data message is correctly recieved the state changes to complete
-    enum message_state_def {initialized, complete};
+    // starts with initialized, when the header parameters are set
+    // changes to complete when the message data has been set
+    // is invalid when during the constructor call invalid parameters are detected
+    enum message_state_def {initialized, complete, invalid};
 
-    // initialize message obj called with the data in the header
-    // only if the data message is successfully received the state changes to complete
+
+    // 2 constructors
+    // one takes information, the other extracts the information from the TCP header
+    // both end in status initialized
+    // to get to complete the data buffer needs to be filled
+    // also set the message id and the additional param buffer
+    // before TCP send set the sender time
+
+
+    // constructor 1
+    // initialize message obj with given message parameters
+    // to get to status complete the data buffer needs to be filled
 	message_class(
             sender_type_def sender, time_format sender_time, 
             sender_type_def sensor_platform, sensor_type_def sensor_type, time_format sensor_time,
             unsigned int data_length);
 
-	// from raw data information create a message
-	//message_class(sender_type_def sensor_platform, sensor_type_def sensortype, unsigned int sensor_time, unsigned int data_length);
+    // constructor 2
+	// from raw TCP header data extract the message parameters and initialize the message
+	// to get to status complete the data buffer needs to be filled
+	//message_class(std::string header_message);
+    message_class(char *header_message, int header_length);
 	
 private:
 
@@ -51,14 +65,14 @@ private:
 	unsigned int message_id;
 
     sender_type_def sender;
-    unsigned long sender_time;
+    time_format sender_time;
 
 	// sensor platform
 	sender_type_def sensor_platform;
 	// sensor type
 	sensor_type_def sensor_type;
 	// sensor time
-	unsigned long sensor_time;
+	time_format sensor_time;
 	// data length
 	unsigned int data_length;
 	// ptr to databuffer
@@ -66,20 +80,32 @@ private:
 	// ptr to param field of size 3 * int
 	char *special_param_buffer;
 
-	message_class(){exit(0);};
+	message_class(){std::cout << "can't use standard constructor for class message_class();\n" << std::endl; exit(0);};
+
+    // extract the message parameters from the TCP header
+    int extract_TCP_header_info1(std::string header_message);
+    //int extract_TCP_header_info(char *header_message);
 
 public:
 
+    // to set message parameters
 	void set_id(unsigned int id);
-	void set_sender_time(time_format t);
+	unsigned int get_id();
+	
+    void set_sender_time(time_format t);
 	int set_special_params(char *param_buffer, int length);
-    unsigned int get_id();
-	int create_TCP_header(char *buffer);
-
+    
     message_state_def get_state();
-    unsigned long get_data_length();
+    unsigned int get_data_length();
     char *get_data_buffer_ptr();
 
+    // from the message parameters create a TCP header
+    int create_TCP_header(char *buffer);
+
+
+    int extract_special_param_buffer(unsigned int *int1, unsigned int *int2, unsigned int *int3);
+
+    // debuging
     void print_meta_data();
 	int write_to_file(const char *fn="./test.jpeg");
 

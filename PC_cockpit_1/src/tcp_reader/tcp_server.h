@@ -9,7 +9,6 @@
 #define TCP_SERVER_H_
 
 #define MAX_HEAD_LENGTH 256
-#define HEADER_LENGTH 25
 
 #include <stdio.h>
 #include <netinet/in.h>
@@ -19,6 +18,9 @@
 #include <unistd.h>
 
 #include <message_class.h>
+#include <message_queue.h>
+
+#define TCP_HEADER_LENGTH 37
 
 class tcp_server {
 
@@ -39,7 +41,8 @@ private:
     void process_messages(int sock);
 
     // processes a header message and returns an initialized message object
-    message_class process_header_message(std::string header_message);                                        
+    message_class process_header_message(std::string header_message);
+    ptr_message process_header_message1(std::string header_message);                                        
 
     //debug routines
 	void error(const char *msg);

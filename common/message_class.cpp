@@ -12,8 +12,7 @@ void message_class::set_sender_time(time_format t){
 }
 
 int message_class::create_TCP_header(char *header_buffer){
-
-	//avoid all functions which are looking for 0 termination
+	//avoid all functions which are looking for 0 termination -> memcopy
 	char con[] = "con";
 	char end[] = "end";
 	memcpy(&header_buffer[0],&con,3);
@@ -27,89 +26,158 @@ int message_class::create_TCP_header(char *header_buffer){
 	memcpy(&header_buffer[22],&special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
 	memcpy(&header_buffer[34],&end,3);
 	return 0;
-	
-	/*
-	printf("header\n");
-	
-	for (int i=0; i<buffer_length; i++){
-		char outp = header_buffer[i];
-		std::cout << int(outp) << "   " << outp << std::endl;
-	}
-	std::cout << std::endl;
-	*/
-	
-	//std::string header(header_buffer);
-	//std::cout << header << std::endl;
-	
-	exit(0);
-	
-	/*
-	
-	// unsigned int message_id;
+}
 
-	bool debug = true;
-	
-	// prepare header message using a stream buffer which to fill with the relevant data
-	std::stringstream buffer;
+//message_class::message_class(std::string header_message){
+// one big mess using char* vs string etc
+// so also here use char* array and the most basic memory access functions
+message_class::message_class(char *header_message, int header_length){
 
-	// start segment
-	buffer << "con";
+    // validate the control segments - con
+    char con[] = "con";
+    int start_match = memcmp(header_message, con,3);
 
-	//sender = rpi
-	buffer << sender;
-	if (debug) std::cout << "sender = " << sender << std::endl;
+    //bool start_match = (memcmp(&header_message[0], &con[0],3) == 0 ); 
+ 
+    char end[] = "end";
+    int end_match = memcmp(&header_message[TCP_HEADER_LENGTH-3], end,3);
 
-	//  time sent = local time	
-	//buffer << sender_time;
-	if (debug) std::cout << "sender time = " << sender_time << std::endl;
-	
-	char *thebytes = (char *) &sender_time;
-	unsigned int length = sizeof(sender_time);
-	for(int i=0; i<length; i++) { buffer << *(thebytes+i); }
-	if (debug) {
-		std::cout << "sender time length = " << length << std::endl;
-		for(int i=0; i<length; i++) { printf("%c   %c\n",thebytes[i],*(thebytes+i)); }
-	}
-	
-	// sensor platform
-	buffer << sensor_platform;
-	if (debug) std::cout << "sensor_platform = " << sensor_platform << std::endl;
+    if (start_match != 0){
+        std::cout << "control segment start doesn't match" << start_match << std::endl;
+        state = message_state_def::invalid;
+    }
 
-	// sensor type
-	buffer << sensor_type;
-	if (debug) std::cout << "sensor_type = " << sensor_type << std::endl;
+    if (end_match != 0){
+        std::cout << "control segment end doesn't match" << std::endl;
+        state = message_state_def::invalid;
+    }
 
-	// sensor time
-	//buffer << sensor_time;
-	
-	thebytes = (char *) &sensor_time;
-	length = sizeof(sensor_time);
-	for(int i=0; i<length; i++) { buffer << *(thebytes+i); }
-	if (debug) {
-		std::cout << "sensor time length = " << length << std::endl;
-		for(int i=0; i<length; i++) { printf("%c   %c\n",thebytes[i],*(thebytes+i)); }
-	}
-	
-	// data length
-	//buffer << sensor_time;
-	thebytes = (char *) &data_length;
-	length = sizeof(data_length);
-	for(int i=0; i<length; i++) { buffer << *(thebytes+i); }
-	if (debug) {
-		std::cout << "data length length = " << length << std::endl;
-		for(int i=0; i<length; i++) { printf("%c   %c\n",thebytes[i],*(thebytes+i)); }
-	}
-	
-	// end segment
-	buffer << "end";
+    if (state == message_state_def::invalid){    
+        std::cout << "header : control segments do not match match" << std::endl;
+        std::cout << "invalidating this message" << std::endl;
 
-	
-	// buffer completed now stream it into header
-	std::string header;
-	buffer >> header;
-	
-	return header;
-	* */
+        print_buffer_content(header_message, TCP_HEADER_LENGTH);
+
+        print_buffer_content(con, 3);
+
+    } else {
+        std::cout << "header : control segments match" << std::endl;
+ 
+        std::cout << "now initializing the message including memory allocation for the data -> copy data to complete the message" << std::endl;
+
+        // reverse of header generation
+	    memcpy(&(this->sender),&header_message[3],1);
+	    memcpy(&(this->sender_time),&header_message[4],4);
+	    memcpy(&(this->message_id),&header_message[8],4);
+	    memcpy(&(this->sensor_platform),&header_message[12],1);
+	    memcpy(&(this->sensor_type),&header_message[13],1);
+	    memcpy(&(this->sensor_time),&header_message[14],4);
+	    memcpy(&(this->data_length),&header_message[18],4);
+        this->data_buffer = (char *) malloc(this->data_length*sizeof(char));
+        this->special_param_buffer = (char *) malloc(SPECIAL_PARAMS_BUFFER_LENGTH*sizeof(char));
+        //memset((this->special_param_buffer),0,SPECIAL_PARAMS_BUFFER_LENGTH);
+	    memcpy((this->special_param_buffer),&header_message[22],SPECIAL_PARAMS_BUFFER_LENGTH);
+
+        print_buffer_content(&header_message[22],SPECIAL_PARAMS_BUFFER_LENGTH);
+        print_buffer_content(this->special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
+
+    exit(0);
+
+        // done initializing, caller needs to add the data
+        this->state = message_state_def::initialized;
+    }
+}
+
+// this function extracts the message parameters from the TCP header and initializes the message members
+int message_class::extract_TCP_header_info1(std::string header_message){
+
+    // validate the control segments
+    std::string con_seg_start = "con";
+    int lstart = con_seg_start.length();
+    bool start_match = header_message.compare(0,lstart,con_seg_start);
+    
+    std::string con_seg_end = "end";
+    int lend = con_seg_end.length();
+    bool end_match = header_message.compare(TCP_HEADER_LENGTH-lend,lend,con_seg_end);
+
+    /*
+    std::cout << "header = " << header_message << std::endl;
+    std::cout << "start seg = " << con_seg_start << std::endl;
+    std::cout << "lstart = " << lstart << std::endl;
+    std::cout << "match = " <<  start_match << std::endl;
+    std::cout << "end seg = " << con_seg_end << std::endl;
+    std::cout << "lend = " << lend << std::endl;
+    std::cout << "match = " <<  end_match << std::endl;
+    */
+
+    if (start_match != 0){
+        std::cout << "control segment start doesn't match" << std::endl;
+        state = message_state_def::invalid;
+        return -1;
+    }
+
+    if (end_match != 0){
+        std::cout << "control segment end doesn't match" << std::endl;
+        state = message_state_def::invalid;
+        return -2;
+    }
+    
+    std::cout << "header : control segments match" << std::endl;
+     
+    // extract the message header info from the message
+    // tried with string functions, however run into issues because of 0 termination (i.e. stringlength turns out too short)
+    // also it depends how the header is created (as stream - subract char0, with memcpy, do not subtract char0
+
+    // sender
+    sender_type_def sender;
+    sender = static_cast<sender_type_def> ( (header_message[3])); //-char('0') );
+    std::cout << "sender = " << sender << "     " << header_message[3] << std::endl;
+    if ( sender == sender_type_def::rpi) std::cout << "ok" << std::endl;
+
+    // time sent
+    //std::string time_extract = header_message.substr (4,4);
+    //std::cout << "extract 4 bytes = " << time_extract << std::endl;
+    //time_format sender_time = convert_string_to_time(time_extract);
+    time_format sender_time;
+    memcpy(&sender_time, &header_message[4],4);
+    std::cout << "sender_time = " << sender_time << std::endl;
+
+    // message id
+    unsigned int message_id;
+    memcpy(&message_id, &header_message[8],4);
+    std::cout << "message_id = " << message_id << std::endl;
+
+    // sensor platform
+    sender_type_def sensor_platform;
+    sensor_platform = static_cast<sender_type_def> ( (header_message[12]));//-char('0') );
+    std::cout << "sensor_platform = " << sensor_platform << std::endl;
+
+    // sensor_type
+    sensor_type_def sensor_type;
+    sensor_type = static_cast<sensor_type_def> ( (header_message[13]));//-char('0') );
+    std::cout << "sensor_type = " << sensor_type << std::endl;
+
+    // sensor time
+    time_format sensor_time;
+    memcpy(&sensor_time, &header_message[14],4);
+    //time_extract = header_message.substr (10,4);
+    //time_format sensor_time = convert_string_to_time(time_extract);
+    std::cout << "sensor_time = " << sensor_time << std::endl;
+
+    // data length
+    unsigned int data_length;
+    memcpy(&data_length, &header_message[18],4);
+    //std::string length_extract = header_message.substr (14,4);
+    //unsigned int data_length = std::stol (length_extract,NULL);;
+    std::cout << "data_length = " << data_length << std::endl;
+
+    // from the info initialize and return a new message
+    // this also assinge the memory for the message according to the length
+    //message_class new_message(sender, sender_time, sensor_platform, sensor_type, sensor_time, data_length);
+    //new_message.set_id(message_id);
+
+    //return new_message;
+    return 0;
 }
 
 message_class::message_class(
@@ -138,7 +206,7 @@ message_class::message_class(
 	// ptr to databuffer
 	this->data_buffer = (char *) malloc(data_length*sizeof(char));
 	
-	//parambuffer init to 0, can be set later
+	//parambuffer init to 0, can be filled later
 	this->special_param_buffer = (char *) malloc(sizeof(char)*SPECIAL_PARAMS_BUFFER_LENGTH);
 	memset((this->special_param_buffer),0,SPECIAL_PARAMS_BUFFER_LENGTH);
 }
@@ -146,8 +214,9 @@ message_class::message_class(
 int message_class::set_special_params(char *param_buffer, int length){
 	//printf("param_buffer ptr     address = %lu   value = %lu\n", (unsigned int)&param_buffer, (unsigned int)param_buffer);
 	//printf("special_param_buffer ptr     address = %lu   value = %lu\n", (unsigned int)&special_param_buffer, (unsigned int)special_param_buffer);
-	if (length>SPECIAL_PARAMS_BUFFER_LENGTH) return 1;
+	if (length>SPECIAL_PARAMS_BUFFER_LENGTH) return -1;
 	memcpy(special_param_buffer,param_buffer,length);
+    return 0;
 }
 
 void message_class::set_id(unsigned int id){
@@ -162,7 +231,7 @@ message_class::message_state_def message_class::get_state(){
     return state;
 }
 
-unsigned long message_class::get_data_length(){
+unsigned int message_class::get_data_length(){
     return data_length;
 }
 
@@ -170,28 +239,43 @@ char* message_class::get_data_buffer_ptr(){
     return data_buffer;
 }
 
+int message_class::extract_special_param_buffer(unsigned int *int1, unsigned int *int2, unsigned int *int3){
+    if (special_param_buffer==NULL) return -1;
+
+    std::cout << "converting special param buffer to 3 unsinged ints" << std::endl;
+
+    print_buffer_content(this->special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
+    memcpy(&int1,&special_param_buffer[0],4);
+    memcpy(&int2,&special_param_buffer[4],4);
+    memcpy(&int3,&special_param_buffer[8],4);
+    return 0;
+}
+
 void message_class::print_meta_data(){
+	printf("-------------------------\n");
     printf("\n\nmessage metadata:\n");
-    printf("message ptr %lu\n",(unsigned int)this);	
+    printf("message ptr %lu\n",(unsigned long)this);	
     if (state == initialized) printf("message status = initialized\n");
     if (state == complete) printf("message status = complete\n");
 
-	printf("message ID %lu\n",message_id);	
-	printf("sender %i\n",sender);	
-	printf("sender time %lu\n",sender_time);
-	printf("sensor_platform %i\n",sensor_platform);	
-    printf("sensor_type %i\n",sensor_type);
-    printf("sensor_time %lu\n",sensor_time);
+	printf("message ID %u\n",(unsigned int)message_id);	
+	printf("sender %c\n",sender);	
+	printf("sender time %u\n",sender_time);
+	printf("sensor_platform %c\n",sensor_platform);	
+    printf("sensor_type %c\n",sensor_type);
+    printf("sensor_time %u\n",sensor_time);
 	printf("data_length %u\n",data_length);
     printf("data buffer address %lu\n",(unsigned long) data_buffer);
     
-    printf("special param buffer = ");
+    printf("special param buffer = \n ");
+    //print_buffer_content(this->special_param_buffer,SPECIAL_PARAMS_BUFFER_LENGTH);
+
     for (int i=0; i<SPECIAL_PARAMS_BUFFER_LENGTH; i++){
 		char c = special_param_buffer[i];
 		int o = int(c);
 		printf("%i,",o);
 	}
-	printf("\n");
+	printf("-------------------------\n");
 }
 
 message_class::~message_class() {

@@ -17,14 +17,14 @@ int tcp_server::send_response(int connectionfd, const char *response, int length
 int tcp_server::read_TCP_header(char **header_buffer){
 
     // read header from buffer and validate its length
-    bzero(*header_buffer, HEADER_LENGTH);
-    int header_length = read(connectionfd, *header_buffer, HEADER_LENGTH);
+    bzero(*header_buffer, TCP_HEADER_LENGTH);
+    int header_length = read(connectionfd, *header_buffer, TCP_HEADER_LENGTH);
 
     printf("message header length = %i\n", header_length);
 
     if (header_length < 0)
         error("ERROR reading message header from connection");
-    if (header_length !=HEADER_LENGTH)
+    if (header_length !=TCP_HEADER_LENGTH)
         error("ERROR message header too short");
 
     return header_length;
@@ -90,7 +90,6 @@ void tcp_server::process_messages(int connectionfd){
     int result=-1;
 
     // prepare buffer
-    unsigned int max_header_length = MAX_HEAD_LENGTH;
     char buffer[MAX_HEAD_LENGTH];
     char *header_buffer = &buffer[0];
     int header_length = -1;
@@ -112,16 +111,31 @@ void tcp_server::process_messages(int connectionfd){
 
         header_length = result;
         
+    /*
         // process header, i.e. extract its segments and initialize a new message accordingly
         std::string header_message(header_buffer, header_length);
         std::cout << "creating header message string = " << header_message << std::endl;
 
-        message_class new_message = process_header_message(header_message);
+        //ptr_message test; //new_message = process_header_message(header_message);
+        //message_class new_message = process_header_message(header_message);
+        message_class new_message(header_message);
+    */
+        message_class new_message(header_buffer, header_length);
+
         new_message.print_meta_data();
+
+        
 
         // read data message and copy the data into the message
         char *data_buffer = new_message.get_data_buffer_ptr();
         unsigned int data_length = new_message.get_data_length();
+
+        std::cout << "now waiting to recieve " << data_length << " data bytes " << std::endl;
+
+        unsigned int rows, cols, depth;
+        std::cout << "currently  : " << rows << " , " << cols << " , " << depth << std::endl;
+        new_message.extract_special_param_buffer(&rows,&cols,&depth);
+        std::cout << "formated to : " << rows << " , " << cols << " , " << depth << std::endl;
 
         result = read_TCP_data(&data_buffer,data_length);
         if (result<0) {
@@ -129,13 +143,18 @@ void tcp_server::process_messages(int connectionfd){
             perror("quitting receiver loop with error in data message");
         }
 
+        bool response_ok = true;
+
         char ok[] = "okokok";
         char resend[] = "resend";
         unsigned int message_id = new_message.get_id();
 
         char *response = (char *) malloc( 10*sizeof(char));
-        memcpy(&response[0],&ok,6);
-        //memcpy(*response[0],&resend,6);
+        if (response_ok == true)
+            memcpy(&response[0],&ok,6);
+        else
+            memcpy(&response[0],&resend,6);
+        
         memcpy(&response[6],&message_id,4);
 
         int s = send_response(connectionfd,response,10);
@@ -144,7 +163,7 @@ void tcp_server::process_messages(int connectionfd){
         }
 
         // queue message, for now just write the file
-        std::string fname = "./test_"+std::to_string(N)+".jpeg";
+        std::string fname = "./test_"+std::to_string(new_message.get_id())+".jpeg";
         new_message.write_to_file(fname.c_str());
         N--;
 
@@ -153,6 +172,18 @@ void tcp_server::process_messages(int connectionfd){
     std::cout << "the endless TCP message processing loop was broken, we shouldn't be here ..." << std::endl;
     //exit(0);
 }
+
+/*
+ptr_message tcp_server::process_header_message1(std::string header_message){
+
+    message_class new_message = process_header_message(header_message);
+    ptr_message message=NULL;
+
+    return message;
+
+    //std::shared_ptr<int> p7 (std::move(p6));
+}
+*/
 
 // this function extracts the header information from the TCP header message (i.e. the buffer) and 
 // initializes the message
@@ -165,7 +196,7 @@ message_class tcp_server::process_header_message(std::string header_message){
     
     std::string con_seg_end = "end";
     int lend = con_seg_end.length();
-    bool end_match = header_message.compare(25-lend,lend,con_seg_end);
+    bool end_match = header_message.compare(TCP_HEADER_LENGTH-lend,lend,con_seg_end);
 
     /*
     std::cout << "header = " << header_message << std::endl;
@@ -194,7 +225,7 @@ message_class tcp_server::process_header_message(std::string header_message){
 
     // sender
     sender_type_def sender;
-    sender = static_cast<sender_type_def> ( (header_message[3])-char('0') );
+    sender = static_cast<sender_type_def> ( (header_message[3])); //-char('0') );
     std::cout << "sender = " << sender << "     " << header_message[3] << std::endl;
     if ( sender == sender_type_def::rpi) std::cout << "ok" << std::endl;
 
@@ -213,12 +244,12 @@ message_class tcp_server::process_header_message(std::string header_message){
 
     // sensor platform
     sender_type_def sensor_platform;
-    sensor_platform = static_cast<sender_type_def> ( (header_message[12])-char('0') );
+    sensor_platform = static_cast<sender_type_def> ( (header_message[12]));//-char('0') );
     std::cout << "sensor_platform = " << sensor_platform << std::endl;
 
     // sensor_type
     sensor_type_def sensor_type;
-    sensor_type = static_cast<sensor_type_def> ( (header_message[13])-char('0') );
+    sensor_type = static_cast<sensor_type_def> ( (header_message[13]));//-char('0') );
     std::cout << "sensor_type = " << sensor_type << std::endl;
 
     // sensor time
