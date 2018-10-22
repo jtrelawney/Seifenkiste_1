@@ -116,7 +116,7 @@ int main(int, char**)
         //GaussianBlur(edges, edges, Size(7,7), 1.5, 1.5);
         //Canny(edges, edges, 0, 30, 3);
         //imshow("edges", edges);
-        if (image_counter>5) break;
+        if (image_counter>1000) break;
         if(waitKey(30) >= 0) break;
     }
     // the camera will be deinitialized automatically in VideoCapture destructor
