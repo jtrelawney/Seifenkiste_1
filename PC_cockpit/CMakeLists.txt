@@ -1,48 +1,104 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(test_streamer)
+# from https://stackoverflow.com/questions/18968979/how-to-get-colorized-output-with-cmake
+string(ASCII 27 Esc)
+set(BoldRed     "${Esc}[1;31m")
+set(Yellow      "${Esc}[33m")
+set(Green       "${Esc}[32m")
+set(BoldGreen   "${Esc}[1;32m")
+set(ColourBold  "${Esc}[1m")
+set(ColourReset "${Esc}[m")
+#message("\n\ncmake script for cmake test main")
+#message("${Green}\n\ncmake script for cmake test main${ColourReset}")
+message("${BoldGreen}\n\ncmake script for cmake : pc cockpit (main)${ColourReset}")
+#message("${Yellow}\n\ncmake script for cmake test main${ColourReset}")
+#message("${BoldRed}\n\ncmake script for cmake test main${ColourReset}")
 
-set(PROJECT_PATH "~/home/ethan/projects/Seifenkiste_1")
-set(DIR_COMMON ${PROJECT_PATH}/common)
-set(DIR_PC ${PROJECT_PATH}/PC_cockpit_1)
-set(DIR_DEV_TEST ${DIR_PC}/dev_tests)
-set(DIR_MAIN ${DIR_PC}/src)
+# many hints taken from how to use flags
+#https://ecrafter.wordpress.com/2012/04/24/cmake-tutorial-part-2/
 
-message ("\n using the following source and lib directories :\n")
-message (${DIR_COMMON} "\n")
-message (${DIR_PC} "\n")
-message (${DIR_DEV_TEST} "\n")
-message (${DIR_MAIN} "\n")
+# 2 build types: release and debug, call cmake with flags to invoke the desired type
+#cmake . -DCMAKE_BUILD_TYPE=Release
+#cmake . -DCMAKE_BUILD_TYPE=Debug
 
+if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
+endif()
+message("\nThe build type is DCMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
+# this triggers the detecion and check process
+project(PC_cockpit)
 
-SET(GCC_COVERAGE_COMPILE_FLAGS "-std=c++11 -Wall -Werror")
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
+# define common and debug/release compiler flags
+# to check flags run : make --trace
 
+# add flags to both release and debug: -std=c++11 -Wall -pedantic -Wextra -Werror -pthread
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -pedantic -Wextra -Werror -pthread")
+# add flags to only debug -g -Og  (valgrind, profiling etc)
+set(CMAKE_CXX_FLAGS_DEBUG "-g -Og -pg")
+# add flags to only rekease -O optimizer level 3 and no debugsymbols etc)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+message("\nThe compiler flags are set to")
+message("CMAKE_CXX_FLAGS is ${CMAKE_CXX_FLAGS}")
+message("CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
+message("CMAKE_CXX_FLAGS_RELEASE is ${CMAKE_CXX_FLAGS_RELEASE}")
 
+# print some directory settings
+#home dir doesnt change when the subdir is called
+message("\ncurrent home dir is ${CMAKE_HOME_DIRECTORY}")
+#current source dir will change to local when the subdir is called
+message("current source dir is ${CMAKE_CURRENT_SOURCE_DIR}")
+#source dir is top of root when several layers are called
+message("source dir is ${CMAKE_SOURCE_DIR}")
 
-set(PROJECT_SOURCES stream_rpi_camera/stream_rpi_camera.cpp)
-add_executable(streamer PRIVATE ${PROJECT_SOURCES} )
+# setting directories
+set(PROJECT_PATH "/home/ethan/projects/Seifenkiste_1")
+set(DIR_PROJECT ${PROJECT_PATH}/PC_cockpit)
+set(DIR_LIBS ${PROJECT_PATH}/lib)
 
+message ("\nusing the following source directories for the main and libs:")
+message (${PROJECT_PATH})
+message (${DIR_PROJECT})
+message (${DIR_LIBS})
 
-# how many dires above does the project start
+# the libs are in the subdirectory lib (which is a link to the real lib directory
+if (CMAKE_BUILD_TYPE MATCHES "Release")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${DIR_LIBS}/lib_release)
+else()
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${DIR_LIBS}/lib_debug)
+endif()
+message("library dir is ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
-target_include_directories( streamer ${DIR_COMMON} )
+# target location of library headers
+set(MY_INCLUDE_TARGET_DIRECTORY ${DIR_LIBS}/lib_include)
+message("include directory is ${MY_INCLUDE_TARGET_DIRECTORY}")
 
-add_library(tcp_server SHARED ../tcp_server/tcp_server.cpp)
-add_library(message_class SHARED ../../common/message_class.cpp)
-add_library(common_stuff SHARED ../../common/defs.cpp)
+# set the option so that when building the libs the project settings are used
+option(USE_CALLER_CONFIG "Use the configuration settings of the caller" ON)
+message("\nin cmake main : caller config set to = ${USE_CALLER_CONFIG}")
+message("\n===================================================")
 
+# first do not build the libraries
+# this directory needs to exist , as mentioned above as a link to the project lib directory
+# add_subdirectory(lib)
 
+# set libraries to use for this project
 set(OPENCV_LIBS opencv_core opencv_highgui opencv_imgproc opencv_video opencv_videoio)
-set(MY_LIBS tcp_server message_class common_stuff)
-set(PROJECT_LIBS ${OPENCV_LIBS} ${MY_LIBS})
-message ("\n\nsetting libraries as :\n" ${PROJECT_LIBS} "\n")
+set(GENERAL_LIBS rt)
+set(MY_LIBS common_stuff buffer_class address_class message_class sensor_base_class sensor_camera_class communication_class message_queue_class)
+set(ALL_PROJECT_LIBS ${GENERAL_LIBS} ${MY_LIBS} ${OPENCV_LIBS})
+message ("\n\nsetting libraries as :\n" ${ALL_PROJECT_LIBS} "\n")
 
+# define link locations -> for own libraries it is a central repository
+include_directories(${MY_INCLUDE_TARGET_DIRECTORY})
+link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+message("include directory is ${MY_INCLUDE_TARGET_DIRECTORY}")
+message("library dir is ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
-#target_link_libraries(streamer tcp_server)
-#target_link_libraries(streamer message_class)
-#target_link_libraries(streamer common_stuff)
-target_link_libraries (streamer ${PROJECT_LIBS})
+# build the cockpit
+add_executable(pc_cockpit_main PC_cockpit_main_process.cpp)
+target_link_libraries (pc_cockpit_main ${ALL_PROJECT_LIBS} tcp_server_class )
+add_executable(pc_cockpit_test PC_cockpit_test_process.cpp)
+target_link_libraries (pc_cockpit_test ${ALL_PROJECT_LIBS} tcp_client_class)
+

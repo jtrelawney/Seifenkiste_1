@@ -29,10 +29,14 @@
 extern message_queue_class *G_MESSAGE_QUEUE_PTR;
 extern end_flag_class G_END_FLAG;
 
+const int COCKPIT_DEBUG_LEVEL = 0;
+
 class cockpit_class{
 private:
     unsigned int event_counter_;
     address_class whoami_;
+    int cockpit_process_id_;
+    int cockpit_debug_level_;
     cockpit_class();
 
 public:

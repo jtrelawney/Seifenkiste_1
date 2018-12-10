@@ -1,6 +1,11 @@
 #include <message_queue_class.h>
 
-message_queue_class::message_queue_class(): message_counter_(0), message_queue_class_debug_level_(MESSAGE_QUEUE_CLASS_DEBUG_LEVEL) , shut_down_flag_(false) {
+message_queue_class::message_queue_class() :
+    message_counter_(0),
+    message_queue_class_debug_level_(MESSAGE_QUEUE_CLASS_DEBUG_LEVEL),
+    shut_down_flag_(false),
+    q_state_(ok)
+{
     if (message_queue_class_debug_level_>0) std::cout << "message queue : default constructor" << std::endl;
 }
 
@@ -21,7 +26,15 @@ bool message_queue_class::get_shut_down_flag() {
 void message_queue_class::set_debug_level(const int &level) { message_queue_class_debug_level_ = level; }
 
 
-void message_queue_class::enqueue(std::unique_ptr<message_class> message){
+bool message_queue_class::enqueue(std::unique_ptr<message_class> message){
+
+    // first check if maybe shutdown is going and messages should be rejected
+    bool shutdown_going_on = ( (q_state_ == shutdown_requested_reject_messages) || ( q_state_ == shutdown_notifying_clients) );
+    if ( shutdown_going_on == true ) {
+        if (message_queue_class_debug_level_>1) std::cout << "message_queue : enqueue : shutdown going on, reject t messsage" << std::endl;
+        return false;    
+    }
+
     message_counter_++;
     if (message_queue_class_debug_level_>1) {
         std::time_t ct = get_time();
@@ -44,6 +57,7 @@ void message_queue_class::enqueue(std::unique_ptr<message_class> message){
     // hence notify the recipient of the first message in the queue
     // note: the lock on the message queue is still in place
     notify_first();
+    return true;
 }
 
 // this is called after a message has been queueu
@@ -111,6 +125,76 @@ void message_queue_class::notify(const address_class &recipient){
     G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[index].notify_one();
 }
 
+// this implements the first phase of the shutdown
+// enqueuing new messages will be rejected
+// and the current queue will be flushed
+// after that the system is ready for the shutdown communication via global end flags and condition variables
+bool message_queue_class::request_shut_down() {
+    if (message_queue_class_debug_level_>0) std::cout << "message queue : request shutdown  called" << std::endl;
+    q_state_ = shutdown_requested_reject_messages;
+    flush_queue();
+    q_state_ = shutdown_notifying_clients;
+    if (message_queue_class_debug_level_>0) std::cout << "message queue : queue flush complete" << std::endl;
+    return true;
+}
+
+// when preparing for the shutdown, empty out all existing messages in the queue
+void message_queue_class::flush_queue(){
+    // little problem: we don't own the lock, so choose controlled shutdown with waits 
+    if (message_queue_class_debug_level_>1) std::cout << "message queue : flushing queue by notifying the receiver of the first message" << std::endl;
+    while (!is_empty()) {
+        notify_first();
+        // give some time for the recipient to pick up the message
+        usleep(10000);
+    }
+}
+
+// this implements the 2nd phase of the shutdown
+// at this point the queue is empty and no new messages are being accepted
+// also the shutdown requester had time to complete his preparations and has now called for the shutdown to complete
+// the queue now informs all registered clients that they shutdown is taking place
+// for them it means they should complete their shutdown activiities and deregister
+bool message_queue_class::shut_down(){
+
+    // first set the flag so that from now on everybody reading the shutdownflag is reading the new status
+    if (message_queue_class_debug_level_>1) std::cout << "message queue : queue is empty, set shutdown flag and wake everybody" << std::endl;
+
+    // this is in brackets so the the lock guard will be released after the section
+    {
+        std::lock_guard<std::mutex> lck (message_queue_class_mutex_);
+        if (message_queue_class_debug_level_>1) std::cout << "message queue :  queue has mutex and sets shutdownflag" << std::endl;
+        shut_down_flag_ = true;
+    }
+
+    // now informat all registered processes of the shutdown
+    while (get_registered_process_count()>0) {
+        notify_all_about_shoutdown();
+        usleep(10000);
+    }
+    if (message_queue_class_debug_level_>1) std::cout << "message queue :  all processes have deregistered" << std::endl;
+    return true;
+}
+
+// this gets a list of all processes in the addressbook and wakes them to signal the shutdown
+void message_queue_class::notify_all_about_shoutdown() {
+    //get list with ids of registered processes
+    std::vector<int> process_list = get_registered_process_list();
+    int N = process_list.size();
+    if (message_queue_class_debug_level_>1)
+        std::cout << "message queue : now waking the " << N << " registered processes to ensure they see the end flag" << std::endl;
+
+    for (int i=0; i<N; i++){
+        if (message_queue_class_debug_level_>-1) std::cout << "message queue : shutdown -> check if mutex is required" << std::endl;
+        //std::unique_lock<std::mutex> lock_it(message_available_mutex[reader_index]);
+        int id = process_list[i];
+        if (message_queue_class_debug_level_>1) std::cout << "message queue : notifying process id = " << id << std::endl;
+        // set the flag to false, ie.e. data is not avaible, so for receiver this could be a spurious wakeup, however the shutdown flag will be checked
+        G_QUEUE_COORDINATION_VARS_DEF::message_available_flag[id] = false;
+        G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[id].notify_one();
+    }
+}
+
+/*
 bool message_queue_class::set_shut_down_flag() {
     std::time_t ct = get_time();
     if (message_queue_class_debug_level_>0) std::cout << "q shutdown down @ " << ct << std::endl;
@@ -132,13 +216,14 @@ bool message_queue_class::set_shut_down_flag() {
     }
 
     if (message_queue_class_debug_level_>1) std::cout << "shutdown waking all process to ensure they see the end flag" << std::endl;
-    for (int i=0; i<G_PROCESS_COUNT; i++){
+    for (int i=0; i<G_MAX_PROCESS_COUNT; i++){
         //std::unique_lock<std::mutex> lock_it(message_available_mutex[reader_index]);
         if (message_queue_class_debug_level_>1) std::cout << "notify reader = " << i << std::endl;
         G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[i].notify_one();
     }
     return true;
 }
+*/
 
 /*
     message_queue_class(): id(0),shut_down_flag(false){};

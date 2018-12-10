@@ -8,6 +8,10 @@ std::condition_variable G_QUEUE_COORDINATION_VARS_DEF::message_available_conditi
 bool G_QUEUE_COORDINATION_VARS_DEF::message_available_flag[G_MAX_PROCESS_COUNT];
 bool G_QUEUE_COORDINATION_VARS_DEF::G_PROCESS_REGISTERED[G_MAX_PROCESS_COUNT];
 
+// class member to synchronize access to the addressbook
+// needs to be static because of global variable status
+std::mutex G_QUEUE_COORDINATION_VARS_DEF::process_class_mutex_;
+
 //: id(0), shut_down_flag_(false), message_queue_class_debug_level_(MESSAGE_QUEUE_CLASS_DEBUG_LEVEL)
 G_QUEUE_COORDINATION_VARS_DEF::G_QUEUE_COORDINATION_VARS_DEF()
     :   registered_process_count(0),
@@ -21,6 +25,9 @@ G_QUEUE_COORDINATION_VARS_DEF::G_QUEUE_COORDINATION_VARS_DEF()
 }
 
 bool G_QUEUE_COORDINATION_VARS_DEF::register_process(int id) {
+
+    std::lock_guard<std::mutex> lck (process_class_mutex_);
+
     int check_id = id % G_MAX_PROCESS_COUNT; 
     if (check_id != id) {
         std::cout << "id = " << id << " of of range (max = " << G_MAX_PROCESS_COUNT << " )" << std::endl;
@@ -34,6 +41,9 @@ bool G_QUEUE_COORDINATION_VARS_DEF::register_process(int id) {
 }
 
 bool G_QUEUE_COORDINATION_VARS_DEF::deregister_process(int id) {
+
+    std::lock_guard<std::mutex> lck (process_class_mutex_);
+
     int check_id = id % G_MAX_PROCESS_COUNT; 
     if (check_id != id) {
         std::cout << "id = " << id << " of of range (max = " << G_MAX_PROCESS_COUNT << " )" << std::endl;
@@ -54,7 +64,7 @@ bool G_QUEUE_COORDINATION_VARS_DEF::deregister_process(int id) {
 
 int G_QUEUE_COORDINATION_VARS_DEF::register_process(const address_class address){
 
-    //std::cout << "registering  =  " << address << std::endl;
+    std::lock_guard<std::mutex> lck (process_class_mutex_);
 
     // check if the address has been already registered
     int count = address_book_.count(address);
@@ -90,6 +100,9 @@ int G_QUEUE_COORDINATION_VARS_DEF::register_process(const address_class address)
 // return false if the address doesn't exist in the address book
 // return true if successfully 
 bool G_QUEUE_COORDINATION_VARS_DEF::deregister_process(const address_class address){
+
+    std::lock_guard<std::mutex> lck (process_class_mutex_);
+
     // find the entry 
     //std::cout << "de-registing, find " << address << std::endl;
     std::map<address_class,int>::iterator it = address_book_.find(address);
@@ -117,8 +130,24 @@ bool G_QUEUE_COORDINATION_VARS_DEF::deregister_process(const address_class addre
 }
 
 int G_QUEUE_COORDINATION_VARS_DEF::get_registered_process_count(){
-    std::cout << "coordination object : get count : implement mutx" << std::endl;
+    std::lock_guard<std::mutex> lck (process_class_mutex_);
     return registered_process_count;
+}
+
+std::vector<int> G_QUEUE_COORDINATION_VARS_DEF::get_registered_process_list(){
+
+    std::lock_guard<std::mutex> lck (process_class_mutex_);
+
+    if (coordination_class_debug_level_>0) std::cout << "communication class : create list with registered processes" << std::endl;
+    std::vector<int> process_list;
+
+	std::map<address_class, int>::iterator it = address_book_.begin();
+	while (it != address_book_.end())
+	{
+		process_list.push_back(it->second);
+		it++;
+	}
+    return process_list;
 }
 
 G_QUEUE_COORDINATION_VARS_DEF::~G_QUEUE_COORDINATION_VARS_DEF(){

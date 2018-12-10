@@ -22,6 +22,28 @@ bool address_class::operator==(const address_class& other_address) {
     return result;
 }
 
+// for using std:map a strict compare op is required to navigate the search tree
+bool address_class::operator<(const address_class& other_address) const {
+
+    int this_platform = (int) get_platform();
+    int other_platform = (int) other_address.get_platform();
+    if ( this_platform < other_platform ) return true;
+    if ( this_platform > other_platform ) return false;
+
+    int this_sensor = (int) get_sensor();
+    int other_sensor = (int) other_address.get_sensor();
+    if ( this_sensor < other_sensor ) return true;
+    if ( this_sensor > other_sensor ) return false;
+
+    int this_process = (int) get_process();
+    int other_process = (int) other_address.get_process();
+    if ( this_process < other_process ) return true;
+    if ( this_process > other_process ) return false;
+
+    //std::cout << "comapring " << *this << " < " << other_address << " and the result is == " << std::endl;
+    return false;
+}
+
 std::ostream& operator<<(std::ostream& out, const address_class& address)  
 {  
     address_class::platform_type_def platform = address.get_platform();

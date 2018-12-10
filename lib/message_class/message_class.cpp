@@ -1,6 +1,6 @@
 #include <message_class.h>
 
-unique_message_ptr message_class_unit_test_create_test_message(int id, int width, int height, int depth, int init){
+unique_message_ptr message_class_unit_test_create_test_message(int id, int width, int height, int depth, int init, bool with_output){
 
     std::cout << "\n\n\n=============================================================================================" << std::endl;
     std::cout << "unit test messaging class" << std::endl;
@@ -13,7 +13,7 @@ unique_message_ptr message_class_unit_test_create_test_message(int id, int width
     if (depth == 3) dim = CV_8UC3;
     std::unique_ptr<cv::Mat> data_mat = std::unique_ptr<cv::Mat> ( new cv::Mat(width,height, dim, cv::Scalar(init,init,init) ) );
     cvMat_params_class test_params(*data_mat.get());
-    test_params.print_cvMat_params();
+    if (with_output) test_params.print_cvMat_params();
 
     int rows, cols, channels, elem_size, type;
     test_params.get_params(rows, cols, channels, elem_size, type);
@@ -41,8 +41,8 @@ unique_message_ptr message_class_unit_test_create_test_message(int id, int width
 	time_format sensor_time = sender_time - 1000;
     
     std::cout << "recipient = " << recipient_addr << std::endl;
-    std::cout << "sender = " << sender_addr << std::endl;
-    std::cout << "sensor = " << sensor_addr << std::endl;
+    if (with_output) std::cout << "sender = " << sender_addr << std::endl;
+    if (with_output) std::cout << "sensor = " << sensor_addr << std::endl;
 
     // now create the message and add sender info
     unique_message_ptr message = unique_message_ptr( new message_class(
@@ -51,15 +51,6 @@ unique_message_ptr message_class_unit_test_create_test_message(int id, int width
         std::move(data_mat)
         )
     );
-
-    /*
-    message = unique_message_ptr( new message_class(
-        message_id, recipient_addr,
-        sensor_addr, sensor_time,
-        data_length, rows, cols, type, std::move(data_mat)
-        )
-    );
-    */
 
     message -> set_sender_address(sender_addr);
     message -> set_sender_time(sender_time);

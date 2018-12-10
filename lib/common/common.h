@@ -35,18 +35,29 @@ public:
 //https://stackoverflow.com/questions/10167534/how-to-find-out-what-type-of-a-mat-object-is-with-mattype-in-opencv
 class cvMat_params_class {
 private:
-    cvMat_params_class();
-    int cols_,rows_,type_,depth_,channels_;
+    int cols_, rows_;       // as expected
+    int mat_type_;          // opencv representation of the data type and channels
+    int depth_;             // opendv representation of the datatype  eg how many bytes of a unsigned, signed, float
+    int channels_;          // how many channels/layers/ ...
+    int total_;             // cvmat represtantion of the size i.e. rows*cols
+    int elem_size_;         // size of one matrix element in bytes (e.g. 32U = 4 bytes, 32F = 16 bytes
+    int data_length_;       // how many bytes of data are in the matrix
+
 public:
-    cvMat_params_class(const cv::Mat &matrix) : cols_(-1),rows_(-1),type_(-1),depth_(-1),channels_(-1) {
-        cols_ = matrix.cols; rows_ = matrix.rows; type_ = matrix.type(); depth_ = matrix.depth(); channels_ = matrix.channels();
-    };
-    int get_cols() { return cols_; };    
-    int get_rows() { return rows_; };    
-    int get_type() { return type_; };
-    void get_params( int &cols, int &rows, int &type) { cols=cols_; rows=rows_;type=type_; };
-    void print_cvMat_params(){ std::cout << "cvMat params     cols =" << cols_ << "   rows = " << rows_ << "  type = " << type_ << "  depth = " << depth_  << "  channels = " << channels_  << std::endl;};
-    ~cvMat_params_class(){};
+    cvMat_params_class();
+    cvMat_params_class(const int &rows, const int &cols, const int &channels, const int &elem_size, const int &mat_type);
+    // depth is not a measure it is a descriptor for the individual elements of the matrix
+    std::vector<std::string> depth_defs_ {"CV_8U", "CV_8S", "CV_16U", "CV_16S", "CV_32S", "CV_32F", "CV_64F","undefined"};
+    cvMat_params_class(const cv::Mat &matrix);
+    int get_cols();    
+    int get_rows();    
+    int get_type();
+    int get_data_length();
+    void get_params( int &rows, int &cols, int &channels, int &elem_size, int &mat_type);
+    void print_cvMat_params();
+    // should be const, but can't be bothered to track down function signatures after midnight ...
+    bool operator==(cvMat_params_class &other);
+    ~cvMat_params_class();
 };
 
 typedef unsigned int time_format;

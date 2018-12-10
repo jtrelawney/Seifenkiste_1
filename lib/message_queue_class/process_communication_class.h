@@ -35,6 +35,9 @@ private:
     // counts the number of registered processes, at shutdown this is a quick check to find out if processes have to be notified
     int registered_process_count;
 
+    // static because global object
+    static std::mutex process_class_mutex_;
+
     std::map<address_class,int> address_book_;
 
 public:
@@ -60,6 +63,7 @@ public:
     virtual bool deregister_process(const address_class address);
     
     int get_registered_process_count();
+    std::vector<int> get_registered_process_list();
 
     int coordination_class_debug_level_;
 };

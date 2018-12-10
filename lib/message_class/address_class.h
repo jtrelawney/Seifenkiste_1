@@ -54,6 +54,9 @@ public:
     // compares 2 address, e.g. when messages are retrieved from a queue
     // currently equality is defined as valid when the process ids are the samee
     bool operator==(const address_class& other_address);
+    //bool operator()(const address_class& a, const address_class& b);
+    // this is required for using std:map, it needs a comparison
+    bool operator<(const address_class& other) const; 
 
 private:
     platform_type_def platform_;
