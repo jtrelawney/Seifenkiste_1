@@ -1,0 +1,86 @@
+cmake_minimum_required(VERSION 3.0)
+
+project(tcp_tests)
+
+# compiler flags
+SET(GCC_ADDITIONAL_FLAGS "-std=c++11 -Wall -pedantic -Wextra -Werror -pthread -g -Og")
+#r
+
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_ADDITIONAL_FLAGS}")
+message ("\nsetting additional compiler flags:")
+message (${CMAKE_CXX_FLAGS} "\n")
+
+
+# where the libs are compiled into
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+message ("\nsetting library output path:")
+message (${CMAKE_LIBRARY_OUTPUT_DIRECTORY} "\n")
+
+
+# setting directories
+set(PROJECT_PATH "/home/ethan/projects/Seifenkiste_1")
+set(DIR_LIBS ${PROJECT_PATH}/lib)
+set(DIR_THIS_LIB ${PROJECT_PATH}/lib/cockpit_class)
+
+message ("\nusing the following source directories for the main and libs:")
+#message (${DIR_LIBS})
+message (${DIR_LIBS})
+message (${DIR_THIS_LIB})
+
+# include directories
+include_directories( ${DIR_THIS_LIB} ${DIR_LIBS}/common ${DIR_LIBS}/message_class ${DIR_LIBS}/message_queue_class ${DIR_LIBS}/sensor_class)
+message ("\n\nheader dirs:")
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "dir='${dir}'")
+endforeach()
+
+# where the libs are compiled into
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_PATH}/lib/lib_compiled)
+#set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+message ("\nsetting library output path:")
+message (${CMAKE_LIBRARY_OUTPUT_DIRECTORY} "\n")
+
+# set libraries to use for this project
+set(OPENCV_LIBS opencv_core opencv_highgui opencv_imgproc opencv_video opencv_videoio)
+set(MY_LIBS common_stuff address_class buffer_class message_class message_queue_class sensor_base_class sensor_camera_class)
+set(GENERAL_LIBS rt)
+set(ALL_PROJECT_LIBS ${GENERAL_LIBS} ${MY_LIBS}  ${OPENCV_LIBS})
+message ("\n\nsetting libraries as :\n" ${ALL_PROJECT_LIBS} "\n")
+
+# setting the repository for the projects shared libraries
+set(MY_LINK_DIRECTORY ${PROJECT_PATH}/lib/lib_compiled)
+link_directories(${MY_LINK_DIRECTORY})
+message ("\nusing the following direcotry as library repository:")
+message (${MY_LINK_DIRECTORY})
+
+
+# define project targets, what will be compiled
+#set(PROJECT_SOURCES  ${DIR_COMMON}/message_class.cpp ${DIR_PROJECT}/stream_rpi_camera.cpp )
+
+#set(PROJECT_SOURCES  ${DIR_KICKSTARTER}/threads/1_concurrent_access.cpp)
+#set(PROJECT_SOURCES  ${DIR_KICKSTARTER}/threads/2_concurrent_access_class_mutex.cpp)
+#set(PROJECT_SOURCES  ${DIR_KICKSTARTER}/threads/3_concurrent_access_queue.cpp)
+set(PROJECT_SOURCES  ${DIR_THIS_LIB}/test_cockpit_class.cpp)
+
+message ("\n\nmain target to compile")
+message ("${PROJECT_SOURCES}")
+
+# add targets 
+add_library(cockpit_class SHARED ${DIR_THIS_LIB}/cockpit_class.cpp)
+
+add_executable(test_cockpit_class ${PROJECT_SOURCES} )
+
+
+#target_link_libraries (message_class common_stuff)
+#target_link_libraries (message_queue_class common_stuff message_class)
+#target_link_libraries (tcp_server common_stuff message_class message_queue_class)
+
+
+#target_link_libraries (1_concurrent_access ${ALL_PROJECT_LIBS})
+#target_link_libraries (3_concurrent_access_queue ${ALL_PROJECT_LIBS})
+
+target_link_libraries (cockpit_class ${ALL_PROJECT_LIBS})
+target_link_libraries (test_cockpit_class ${ALL_PROJECT_LIBS} cockpit_class)
+
+

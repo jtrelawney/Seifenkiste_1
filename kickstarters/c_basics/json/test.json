@@ -1,0 +1,11 @@
+{
+	"usb_camera": {
+		"width": 640.5,
+		"height": 480.3
+	},
+	"usonic": {
+		"frequency": 10,
+		"min_dist": 100,
+		"max_dist": 400
+	}
+}

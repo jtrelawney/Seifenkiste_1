@@ -1,0 +1,110 @@
+cmake_minimum_required(VERSION 3.0)
+
+project(messaging_lib)
+
+# compiler flags
+#SET(GCC_ADDITIONAL_FLAGS "-std=c++11 -Wall -pedantic -Wextra -Werror -pthread -g -Og")
+SET(GCC_ADDITIONAL_FLAGS "-std=c++11 -Wall -pedantic -Wextra -Werror") #-pthread")
+
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_ADDITIONAL_FLAGS}")
+message ("\nsetting additional compiler flags:")
+message (${CMAKE_CXX_FLAGS} "\n")
+
+# setting directories
+set(PROJECT_PATH "/home/ethan/projects/Seifenkiste_1")
+set(DIR_MESSAGING_LIBS ${PROJECT_PATH}/lib/message_class)
+set(DIR_COMMON_LIBS ${PROJECT_PATH}/lib/common)
+
+message ("\nusing the following source directories for the libs:")
+message (${DIR_MESSAGING_LIBS})
+
+# include directories
+include_directories( ${DIR_MESSAGING_LIBS}  ${DIR_COMMON_LIBS})
+#include_directories( ${DIR_MESSAGING_LIBS})
+message ("\n\nheader dirs:")
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "dir='${dir}'")
+endforeach()
+
+# where the libs are compiled into
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_PATH}/lib/lib_compiled)
+#set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+message ("\nsetting library output path:")
+message (${CMAKE_LIBRARY_OUTPUT_DIRECTORY} "\n")
+
+# setting the repository for the projects shared libraries
+set(MY_LINK_DIRECTORY ${PROJECT_PATH}/lib/lib_compiled)
+link_directories(${MY_LINK_DIRECTORY})
+message ("\nusing the following direcotry as project repository:")
+message (${PROJECT_PATH} "\n" ${DIR_MESSAGING_LIBS} "\n" ${DIR_COMMON_LIBS})
+
+
+# set libraries to use for this project
+#set(OPENCV_LIBS opencv_core opencv_highgui opencv_imgproc opencv_video opencv_videoio)
+#set(MY_LIBS message_queue_class message_class buffer_class common_stuff common_communication)
+set(MY_LIBS common_stuff address_class buffer_class)
+set(GENERAL_LIBS rt)
+set(OPENCV_LIBS opencv_core opencv_highgui opencv_imgproc opencv_video opencv_videoio)
+set(ALL_PROJECT_LIBS ${GENERAL_LIBS} ${MY_LIBS} ${OPENCV_LIBS} )
+message ("\n\nsetting libraries as :\n" ${ALL_PROJECT_LIBS} "\n")
+
+
+# define project targets, what will be compiled
+#set(PROJECT_SOURCES  ${DIR_COMMON}/message_class.cpp ${DIR_PROJECT}/stream_rpi_camera.cpp )
+
+#set(PROJECT_SOURCES  ${DIR_KICKSTARTER}/threads/1_concurrent_access.cpp)
+#set(PROJECT_SOURCES  ${DIR_KICKSTARTER}/threads/2_concurrent_access_class_mutex.cpp)
+#set(PROJECT_SOURCES  ${DIR_KICKSTARTER}/threads/3_concurrent_access_queue.cpp)
+#set(PROJECT_SOURCES  ${DIR_MESSAGING_LIBS}/test_message_class.cpp ${DIR_MESSAGING_LIBS}/buffer_class_unit_test.cpp)
+
+#set(PROJECT_SOURCES  ${DIR_MESSAGING_LIBS}/test_message_class.cpp ${DIR_MESSAGING_LIBS}/unit_test_buffer_class.cpp ${DIR_MESSAGING_LIBS}/unit_test_message_class.cpp)
+set(PROJECT_SOURCES  ${DIR_MESSAGING_LIBS}/test_message_class.cpp)
+
+message ("\n\nunit test target to compile")
+message ("${PROJECT_SOURCES}")
+#message ("${PROJECT_SOURCES}")
+
+# add targets 
+add_library(address_class SHARED ${DIR_MESSAGING_LIBS}/address_class.cpp)
+add_library(buffer_class SHARED ${DIR_MESSAGING_LIBS}/buffer_class.cpp)
+add_library(message_class SHARED ${DIR_MESSAGING_LIBS}/message_class.cpp)
+#add_library(message_queue_class SHARED ${DIR_MESSAGING_LIBS}/message_queue_class.cpp)
+#add_library(tcp_class SHARED ${DIR_PROJECT}/tcp_class.cpp)
+#add_library(message_queue_class SHARED ${DIR_PROJECT}/message_queue_class.cpp)
+#add_library(message_queue_class SHARED ${DIR_COMMON}/message_queue_class.cpp)
+#add_library(tcp_server SHARED ${DIR_PC_LIBS}/tcp_server.cpp)
+
+#add_executable(buffer_class_unit_test buffer_class_unit_test.cpp)
+
+
+add_executable(test_message_class ${PROJECT_SOURCES} )
+
+#add_executable(2_concurrent_access_class_mutex ${PROJECT_SOURCES} )
+#add_executable(3_concurrent_access_queue ${PROJECT_SOURCES} )
+#add_executable(messaging_framework ${PROJECT_SOURCES} )
+
+
+#target_link_libraries (sensor_camera_class sensor_base_class)
+#target_link_libraries (test_sensor_camera sensor_camera_class)
+#target_link_libraries (buffer_class message_class message_queue_class)
+
+
+message ("\n\nlink the unit test")
+#target_link_libraries (buffer_class_unit_test ${ALL_PROJECT_LIBS})
+target_link_libraries (message_class ${ALL_PROJECT_LIBS} )
+target_link_libraries (test_message_class ${ALL_PROJECT_LIBS} message_class)
+#target_link_libraries(message_class common_communication)
+#target_link_libraries(message_class buffer_class)
+#target_link_libraries(message_queue_class common_communication)
+#target_link_libraries(message_queue_class message_class)
+
+
+# target_link_libraries (cv_test opencv_core opencv_highgui opencv_imgproc opencv_video opencv_videoio)
+
+#target_link_libraries (tcp_server common_stuff message_class message_queue_class)
+
+#target_link_libraries (1_concurrent_access ${ALL_PROJECT_LIBS})
+#target_link_libraries (3_concurrent_access_queue ${ALL_PROJECT_LIBS})
+#target_link_libraries (messaging_framework ${ALL_PROJECT_LIBS})
+
