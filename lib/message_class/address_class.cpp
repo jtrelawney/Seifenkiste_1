@@ -7,7 +7,7 @@ address_class::platform_type_def address_class::get_platform() const { return pl
 address_class::sensor_type_def address_class::get_sensor() const { return sensor_; }
 address_class::process_type_def address_class::get_process() const { return process_; }
 
-int address_class::get_process_index() const { return (int) process_; }
+//int address_class::get_process_index() const { return (int) process_; }
 
 bool address_class::operator==(const address_class& other_address) {
     int this_platform = (int) get_platform();

@@ -39,6 +39,7 @@ private:
     static std::mutex process_class_mutex_;
 
     std::map<address_class,int> address_book_;
+    address_class tcp_address_;
 
 public:
     G_QUEUE_COORDINATION_VARS_DEF();
@@ -55,12 +56,15 @@ public:
     //bool is_condition_flag_true(const int &index) { return (condition_flags[index] == true); };
 
     // processes involved in communication register their id to be informed when a message is available for them
-    virtual bool register_process(int id);
-    virtual bool deregister_process(int id);
+    //virtual bool register_process(int id);
+    //virtual bool deregister_process(int id);
 
     // processes involved in communication register their address to be informed when a message is available for them
-    virtual int register_process(const address_class address);
-    virtual bool deregister_process(const address_class address);
+    virtual int register_process(const address_class &address);
+    virtual int get_process_id(const address_class &address);
+    virtual int register_as_tcp_process(const address_class &address);
+    virtual address_class get_address_of_tcp_process();
+    virtual bool deregister_process(const address_class &address);
     
     int get_registered_process_count();
     std::vector<int> get_registered_process_list();

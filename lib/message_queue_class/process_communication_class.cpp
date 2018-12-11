@@ -15,6 +15,7 @@ std::mutex G_QUEUE_COORDINATION_VARS_DEF::process_class_mutex_;
 //: id(0), shut_down_flag_(false), message_queue_class_debug_level_(MESSAGE_QUEUE_CLASS_DEBUG_LEVEL)
 G_QUEUE_COORDINATION_VARS_DEF::G_QUEUE_COORDINATION_VARS_DEF()
     :   registered_process_count(0),
+		tcp_address_(address_class()),
         coordination_class_debug_level_(COMMUNICATION_CLASS_DEBUG_LEVEL)
 {
     if (coordination_class_debug_level_>0) std::cout << "communication class : con - structor call : max process count = " << G_MAX_PROCESS_COUNT << std::endl;
@@ -24,6 +25,7 @@ G_QUEUE_COORDINATION_VARS_DEF::G_QUEUE_COORDINATION_VARS_DEF()
     }
 }
 
+/*
 bool G_QUEUE_COORDINATION_VARS_DEF::register_process(int id) {
 
     std::lock_guard<std::mutex> lck (process_class_mutex_);
@@ -55,6 +57,8 @@ bool G_QUEUE_COORDINATION_VARS_DEF::deregister_process(int id) {
     registered_process_count--;
     return true;
 }
+*/
+
 
 // register a process in the address book
 // assign the unique identifier and enable it in the processlist
@@ -62,7 +66,7 @@ bool G_QUEUE_COORDINATION_VARS_DEF::deregister_process(int id) {
 // if the max count has been reached already - > return -1
 // else find the first available index, assign it, enable the process, increase processcount, return the new index
 
-int G_QUEUE_COORDINATION_VARS_DEF::register_process(const address_class address){
+int G_QUEUE_COORDINATION_VARS_DEF::register_process(const address_class &address){
 
     std::lock_guard<std::mutex> lck (process_class_mutex_);
 
@@ -91,15 +95,35 @@ int G_QUEUE_COORDINATION_VARS_DEF::register_process(const address_class address)
         index++;
     }
 
-    // no slot in reange found -> max is reached already
+    // no slot in range found -> max is reached already
     std::cout << "coordination object : register process : registered process count already maxed out = (" << G_MAX_PROCESS_COUNT << ")" << std::endl;
     return -1;
 }
 
+int G_QUEUE_COORDINATION_VARS_DEF::get_process_id(const address_class &address){
+		int index = -1;
+		std::map<address_class,int>::iterator it = address_book_.find(address);
+		if (it!=address_book_.end() ){
+			index =  it->second;
+		}
+		return index;
+}
+
+int G_QUEUE_COORDINATION_VARS_DEF::register_as_tcp_process(const address_class &address){
+	int id = register_process(address);
+	// only if the process is not in the addressbook yet and could not be registered we get an error value <0
+	if (id<0) return id;
+	tcp_address_ = address;
+	std::cout << "registering process as tcp process " << address << "   id = " << id << std::endl;
+	return id;
+}
+
+address_class G_QUEUE_COORDINATION_VARS_DEF::get_address_of_tcp_process(){ return tcp_address_; }
+
 // find the index of the address to be deregistered and delete the entry
 // return false if the address doesn't exist in the address book
 // return true if successfully 
-bool G_QUEUE_COORDINATION_VARS_DEF::deregister_process(const address_class address){
+bool G_QUEUE_COORDINATION_VARS_DEF::deregister_process(const address_class &address){
 
     std::lock_guard<std::mutex> lck (process_class_mutex_);
 

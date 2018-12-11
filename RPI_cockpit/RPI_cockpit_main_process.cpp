@@ -15,29 +15,29 @@
 #include <sensor_camera_class.h>
 #include <tcp_client.h>
 
-
-// message_queue_class.h imports the coordination variables and mutex
-#include<message_queue_class.h>
-
 // define a global queue object for all processes / objects to refer to using extern 
 message_queue_class *G_MESSAGE_QUEUE_PTR;
+// pull in the global end flag to signal the shutdown to entities that are not communicating through condition variables
 extern end_flag_class G_END_FLAG;
 
 void run_tcp_client(){
 
+	// start the client
     std::cout << "\n\n starting TCP client" << std::endl;
     tcp_client client;
     client.set_debug_level(5);
     client.set_queue_ptr(G_MESSAGE_QUEUE_PTR);
+    // this prepares the port for tcp action and also registers the client as tcp process with the queue
+    int result = client.start_up();
+
     // dont need predicate
     //client.set_termination_predicate( []() { std::cout << "calling termination predicate " << std::endl; return G_END_FLAG.read_flag();});
-    int result = client.start_up();
 
     if ( !(result<0) ) {
         while(G_END_FLAG.read_flag() == false) {
             std::cout << "client listening on port" << std::endl;
             // deep down this blocks until a connection is made, then it creates a receiver process, returns and a new listener blocks until the next connection arrives
-            client.connect_and_receive();
+            client.keep_processing();
             std::cout << "client returning from blocking call" << std::endl;
         }
     }
@@ -46,12 +46,67 @@ void run_tcp_client(){
 
 void run_camera_thread(){
 
-    address_class cockpit_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::undefined_sensor,address_class::process_type_def::cockpit);
+    address_class recipient_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::undefined_sensor,address_class::process_type_def::cockpit);
+    address_class camera_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::camera1,address_class::process_type_def::undefined);
 
-    cv::namedWindow("usb_camera",1);
+    cv::namedWindow("camera_usb",2);
+
+    // create the camera object
+    sensor_camera_class *camera = new sensor_camera_class();
+    if ( camera->init_sensor() < 0 ) {
+        std::cout << "error initializing camera" << std::endl;
+        return;
+    }
+    
+    // now keep reading and sending camera images
+    int frame_count(0);
+    unique_message_ptr message;
+    
+    bool the_end = false;
+    while(the_end == false) {
+        cv::Mat frame;
+        camera->acquire_data();
+        if (camera->fetch_current_frame(frame) < 0 ) std::cout << "frame invalid" << std::endl;
+        else {
+            frame_count++;
+            //cv::imshow("camera_usb", frame.clone());
+            unsigned int message_id = (unsigned int) frame_count;
+	        time_format sensor_time = get_time_stamp();
+            time_format sender_time = get_time_stamp();
+        
+            //std::unique_ptr<cv::Mat> data_mat = std::unique_ptr<cv::Mat> ( new cv::Mat(3,3, CV_8UC3, cv::Scalar(0,128,255) ) );
+            std::unique_ptr<cv::Mat> data_mat = std::unique_ptr<cv::Mat> ( new cv::Mat(frame) );
+
+            message = unique_message_ptr( new message_class(
+                message_id, recipient_addr,
+                camera_addr, sensor_time,
+                std::move(data_mat)
+                )
+            );
+
+            message -> set_sender_address(camera_addr);
+            message -> set_sender_time(sender_time);
+
+            std::cout << "camera process : queuing message" << std::endl;
+            G_MESSAGE_QUEUE_PTR->enqueue(std::move(message));
+            //if (result<0) std::cout << "error sending message via TCP" << std::endl; //client.print_status();
+            
+			if( cv::waitKey(1) >= 0) break;
+
+        }
+    }
+    std::cout << "camera done , current framecount = " << frame_count << std::endl;
+    
+    cv::destroyWindow("camera_usb");
+}
+
+/*
+    address_class camera_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::camera1,address_class::process_type_def::undefined);
+	
+
     std::time_t ct;
 
-    int process_index = G_MESSAGE_QUEUE_PTR -> register_process(cockpit_addr);
+    int process_index = G_MESSAGE_QUEUE_PTR -> register_process(camera_addr);
 
     // get lock then in loop sleep until notified
     std::cout << "cockpit locks its mutex" << std::endl;
@@ -69,7 +124,7 @@ void run_camera_thread(){
 
         if ( G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[process_index] == true ) {
             ct = get_time();
-            unique_message_ptr message = G_MESSAGE_QUEUE_PTR->dequeue(cockpit_addr);
+            unique_message_ptr message = G_MESSAGE_QUEUE_PTR->dequeue(camera_addr);
             std::cout << "\nmessage received " << message->get_id() << std::endl;
             if (message!=nullptr) {
                 std::unique_ptr<cv::Mat> frame = message->fetch_data();
@@ -85,12 +140,13 @@ void run_camera_thread(){
         }
     }
     ct = get_time();
-    std::cout << "\ncockpit pid = " << cockpit_addr << " verified the shutdown flag and is exiting @ " << ct << std::endl;
-    bool result = G_MESSAGE_QUEUE_PTR -> deregister_process(cockpit_addr);
+    std::cout << "\ncockpit pid = " << process_index << " verified the shutdown flag and is exiting @ " << ct << std::endl;
+    bool result = G_MESSAGE_QUEUE_PTR -> deregister_process(camera_addr);
     std::cout << "\nresult deregistering cockpit = " << result << std::endl;
     
-    cv::destroyWindow("usb_camera");
+
 }
+* */
 
 // start the tcp_server thread (to receive messages)
 // start the global message queue (so that tcp can queue the messages)
@@ -120,13 +176,14 @@ int main(int argc, char *argv[])
     // create global message queue and endflag
     std::cout << "\n\n\ncreating global message queue" << std::endl;
     G_MESSAGE_QUEUE_PTR = new message_queue_class();
+    G_MESSAGE_QUEUE_PTR -> set_debug_level(5);
     std::cout << "pulling in global end flag" << std::endl;
     extern end_flag_class G_END_FLAG;
 
     // waiting for things to catch up
     sleep(1);
 
-    // start the tcp client to send messages to the cockpit
+    // start the tcp client to send messages to the pc cockpit
     std::cout << "\n\n\ncreating tcp client process " << std::endl;
     std::thread tcp_client_thread(run_tcp_client);
 

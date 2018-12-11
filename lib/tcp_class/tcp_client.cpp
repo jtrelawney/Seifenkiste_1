@@ -9,7 +9,7 @@ int tcp_client::start_up(){
 	if (my_queue_ptr_ == nullptr) {
 		if (tcp_client_debug_level_>0) std::cout << "tcp client : startup call - no message queue ptr defined, can't register" << std::endl;
 	} else {
-		tcp_client_process_id_ = my_queue_ptr_ -> register_process(tcp_client_address_);
+		tcp_client_process_id_ = my_queue_ptr_ -> register_as_tcp_process(tcp_client_address_);
 		if (tcp_client_process_id_<0) if (tcp_client_debug_level_>0) std::cout << "tcp client : startup call - registration failed, result = " << tcp_client_process_id_ << std::endl;
 	}
     
@@ -50,56 +50,65 @@ std::thread tcp_client::operator()() {
 }
 
 // the main processing loop
-// sleeps on the condition variable, which is activated by the message queue
-// check the global end flag and the shtudown flag of the message queue to find out when to shut down
+// sleeps on the condition variable, until signal from the message queue
 void tcp_client::keep_processing(){
 
     std::time_t ct;
-
     // get lock then in loop sleep until notified
     std::cout << "tcp_client : keep processing : tcp locks its mutex" << std::endl;
     std::unique_lock<std::mutex> lock_communication_mutex(G_QUEUE_COORDINATION_VARS_OBJ.message_available_mutex[tcp_client_process_id_]);
-    while(G_END_FLAG.read_flag()==false) {
+
+    bool the_end = false;
+    while (!(the_end)){
 
         std::cout << "\n\n===========================================" << std::endl;
-        std::cout << "cockpit releases its mutex and sleeps" << std::endl;
+        std::cout << "tcp_client : keep processing : release mutex and sleep" << std::endl;
         G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[tcp_client_process_id_].wait(lock_communication_mutex);
         // after waking up the process holds the lock
-        // check if valid message is available (and process it), or if not then check if exit criteria is fullfilled (otherwise wakeup is fake)
+		ct = get_time();
+		if (tcp_client_debug_level_>1) std::cout << "tcp_client  = " << tcp_client_process_id_ << " wakes up @ " << ct << std::endl;
 
-        // if (G_MESSAGE_QUEUE_PTR -> get_shut_down_flag() == true) break;
-        // check if message is available, if not it is either a spurious wakeup or a the queue is shutting down
+        // check if message is available and if yes send it via tcp
         if ( G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[tcp_client_process_id_] == true ) {
-
-            ct = get_time();
-            if (tcp_client_debug_level_>1) std::cout << "tcp_client  = " << tcp_client_process_id_ << " wakes up @ " << ct << std::endl;
 
             // fetch and process the message
             unique_message_ptr message = my_queue_ptr_->dequeue(tcp_client_address_);
-
-            //std::cout << "\nmessage received " << message->get_id() << std::endl;
             if (message!=nullptr) {
-                std::unique_ptr<cv::Mat> frame = message->fetch_data();
-                //test_message -> print_meta_data();
-            }
+				if (tcp_client_debug_level_>1) std::cout << "tcp_client  = " << tcp_client_process_id_ << " received message, send via tcp" << std::endl;
+				send_message(std::move(message));
+            } else {
+				if (tcp_client_debug_level_>1) std::cout << "tcp_client  = " << tcp_client_process_id_ << " received nullptr message" << std::endl;
+			}
 
             // message processed -> set com flag
             G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[tcp_client_process_id_] = false;
-            // check if the shutdown flag was set (message queue only sets shutdown flag if the queue is empty)
-            // do that after message has been processed,so that the flag has been set to false, else the queueu thinks the message needs to still be processed
-            // if (G_MESSAGE_QUEUE_PTR -> get_shut_down_flag() == true) break;
+
         } else {
             // if woken up, but the data flag is false then check for shutdown, else it is spurious wake up
             if (my_queue_ptr_ -> get_shut_down_flag() == true) break;
             else std::cout << "tcp_client : keep_processing : wake up , no data, no shutdown -> spurious wake up?" << ct << std::endl;
         }
+
+		/*
+        if ( check_termination_call_back_predicate != nullptr){
+            bool test = check_termination_call_back_predicate();
+            the_end = test;
+            if (test == false)
+                std::cout << "tcp_server : process messages : not yet at the end" << std::endl;
+            else
+                std::cout << "tcp_server : process messages : now at the end" << std::endl;
+        }
+        */
     }
+
     ct = get_time();
     std::cout << "\ntcp_client pid = " << tcp_client_process_id_ << " verified the shutdown flag and is exiting @ " << ct << std::endl;
 
     bool result = my_queue_ptr_ -> deregister_process(tcp_client_address_);
     std::cout << "\ntcp_client deregistering from message queue , result = " << result << std::endl;
 }
+
+
 
 
 void tcp_client::print_status(){ tcp_class::TCP_print_status(); }
