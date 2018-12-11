@@ -1,1 +1,5 @@
 **/build
+build/
+**/lib_run
+**/lib_include
+**/lib_debug

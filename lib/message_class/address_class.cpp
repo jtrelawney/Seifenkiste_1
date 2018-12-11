@@ -105,8 +105,11 @@ std::ostream& operator<<(std::ostream& out, const address_class::process_type_de
         case address_class::process_type_def::cockpit:
             out << "cockpit ";
             break;    
-        case address_class::process_type_def::tcp:
-            out << "tcp ";
+        case address_class::process_type_def::tcp_client:
+            out << "tcp client";
+            break;    
+        case address_class::process_type_def::tcp_server:
+            out << "tcp server";
             break;    
         case address_class::process_type_def::undefined:
             out << "undefined ";

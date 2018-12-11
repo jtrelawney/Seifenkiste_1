@@ -350,18 +350,19 @@ void message_class::print_meta_data(){
 
 	printf("\n-------------------------\n");
     printf("\n\nmessage metadata:\n");
+    /*
     if (this == nullptr) {
         printf("reference is NULL, can't print metadata\n");
         return;
     }
-
+	*/
+	
     printf("message ptr %lu\n",(unsigned long)this);	
     if (state_ == initialized) printf("message status = initialized\n");
     if (state_ == complete) printf("message status = complete\n");
     if (state_ == invalid) printf("message status = invalid  (corrupted during construction or move operator applied)\n");
     if (state_ == error_when_constructing_from_buffer) printf("message status = error_when_constructing_from_buffer  (corrupted during construction)\n");
-    if (state_ == data_handed_over_waiting_to_be_marked_for_deletion)
-        printf("message status = data_handed_over_waiting_to_be_marked_for_deletion\n");
+    if (state_ == data_handed_over_waiting_to_be_marked_for_deletion) printf("message status = data_handed_over_waiting_to_be_marked_for_deletion\n");
 
 	std::cout << "message ID = " << message_id_ << std::endl;
 	std::cout << "recipient : " << recipient_ << std::endl;

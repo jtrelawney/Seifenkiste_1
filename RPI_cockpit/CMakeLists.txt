@@ -10,7 +10,7 @@ set(ColourBold  "${Esc}[1m")
 set(ColourReset "${Esc}[m")
 #message("\n\ncmake script for cmake test main")
 #message("${Green}\n\ncmake script for cmake test main${ColourReset}")
-message("${BoldGreen}\n\ncmake script for cmake : rpi cockpit (main)${ColourReset}")
+message("${BoldGreen}\n\ncmake script for cmake : pc cockpit (main)${ColourReset}")
 #message("${Yellow}\n\ncmake script for cmake test main${ColourReset}")
 #message("${BoldRed}\n\ncmake script for cmake test main${ColourReset}")
 
@@ -53,8 +53,8 @@ message("current source dir is ${CMAKE_CURRENT_SOURCE_DIR}")
 message("source dir is ${CMAKE_SOURCE_DIR}")
 
 # setting directories
-set(PROJECT_PATH "/home/ethan/projects/Seifenkiste_1")
-set(DIR_PROJECT ${PROJECT_PATH}/PC_cockpit)
+set(PROJECT_PATH "/home/pi/projects/Seifenkiste_1")
+set(DIR_PROJECT ${PROJECT_PATH}/RPI_cockpit)
 set(DIR_LIBS ${PROJECT_PATH}/lib)
 
 message ("\nusing the following source directories for the main and libs:")
@@ -97,8 +97,8 @@ message("include directory is ${MY_INCLUDE_TARGET_DIRECTORY}")
 message("library dir is ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
 # build the cockpit
-add_executable(pc_cockpit_main PC_cockpit_main_process.cpp)
-target_link_libraries (pc_cockpit_main ${ALL_PROJECT_LIBS} tcp_server_class )
-add_executable(pc_cockpit_test PC_cockpit_test_process.cpp)
-target_link_libraries (pc_cockpit_test ${ALL_PROJECT_LIBS} tcp_client_class)
+add_executable(rpi_cockpit_main RPI_cockpit_main_process.cpp)
+target_link_libraries (rpi_cockpit_main ${ALL_PROJECT_LIBS} tcp_client_class )
+#add_executable(pc_cockpit_test PC_cockpit_test_process.cpp)
+#target_link_libraries (pc_cockpit_test ${ALL_PROJECT_LIBS} tcp_client_class)
 
