@@ -10,7 +10,7 @@ set(ColourBold  "${Esc}[1m")
 set(ColourReset "${Esc}[m")
 #message("\n\ncmake script for cmake test main")
 #message("${Green}\n\ncmake script for cmake test main${ColourReset}")
-message("${BoldGreen}\n\ncmake script for cmake : rpi cockpit (main)${ColourReset}")
+message("${BoldGreen}\n\ncmake script for cmake : pc cockpit (main)${ColourReset}")
 #message("${Yellow}\n\ncmake script for cmake test main${ColourReset}")
 #message("${BoldRed}\n\ncmake script for cmake test main${ColourReset}")
 

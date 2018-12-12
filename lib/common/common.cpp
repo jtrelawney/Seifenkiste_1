@@ -43,7 +43,8 @@ int cvMat_params_class::get_data_length() { return data_length_; }
 void cvMat_params_class::get_params( int &rows, int &cols, int &channels, int &elem_size, int &mat_type) {
     rows=rows_; cols=cols_; channels=channels_;elem_size=elem_size_;mat_type=mat_type_;
 }
-void cvMat_params_class::print_cvMat_params(){ std::cout << "cvMat params     rows =" << rows_ << "   cols = " << cols_ << "  channels = " << channels_ << std::endl;
+void cvMat_params_class::print_cvMat_params(){
+	std::cout << "cvMat params     rows =" << rows_ << "   cols = " << cols_ << "  channels = " << channels_ << std::endl;
     std::cout << "elem_size = " << elem_size_ << std::endl;
     int depth_def_index = depth_;
     if ( (depth_def_index<0) || (depth_def_index>(int)depth_defs_.size()-1 ) ) depth_def_index = depth_defs_.size()-1;
@@ -58,17 +59,16 @@ bool cvMat_params_class::operator==(cvMat_params_class &other){
     other.get_params( rows, cols, channels, elem_size, mat_type);
     
     bool result = ( (rows = rows_) && (cols == cols_) && (mat_type == mat_type_) );
-    std::cout << "rows = " << rows_ << "        other rows = " << rows << std::endl;
-    std::cout << "cols = " << cols_ << "        other cols = " << cols << std::endl;
-    std::cout << "mat_type = " << mat_type_ << "        other mat_type = " << mat_type << std::endl;
-    std::cout << "result = " << result << std::endl;
+    //std::cout << "rows = " << rows_ << "        other rows = " << rows << std::endl;
+    //std::cout << "cols = " << cols_ << "        other cols = " << cols << std::endl;
+    //std::cout << "mat_type = " << mat_type_ << "        other mat_type = " << mat_type << std::endl;
+    //std::cout << "result = " << result << std::endl;
 
     // depth is not received via tcp, it is set by opencv when the mat is created, since it is initialized with -1 : the comparison would fail.
     //result = result && ( (elem_size = elem_size_) && (channels == channels_) );
     result = result && ( (elem_size = elem_size_) );
-    std::cout << "elem_size = " << elem_size_ << "        other elem_size = " << elem_size << std::endl;
-    std::cout << "result = " << result << std::endl;
-
+    //std::cout << "elem_size = " << elem_size_ << "        other elem_size = " << elem_size << std::endl;
+    //std::cout << "result = " << result << std::endl;
     return result;
 }
 

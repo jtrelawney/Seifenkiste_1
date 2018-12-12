@@ -35,6 +35,7 @@ class message_queue_class : public G_QUEUE_COORDINATION_VARS_DEF {
 private:
 
     int message_counter_;
+	address_class message_queue_address_;
 
     // debug output 
     int message_queue_class_debug_level_;
@@ -54,8 +55,11 @@ private:
     std::queue<address_class> recipient_address_q_;
     std::queue<std::unique_ptr<message_class> > message_q_;
 
+
+    bool does_message_need_routing_via_tcp(const address_class &recipient);
     // to notify a process that a message is available
     // only call when the data lock has been obtained
+
     void notify_first();
     void notify(const address_class &recipient);
 
@@ -63,8 +67,10 @@ private:
     //int id;
     //static std::mutex id_mutex;
 
+
 public:
     message_queue_class();
+    message_queue_class(address_class message_queue_address);
     virtual ~message_queue_class();
 
     // add a message at the end of the queue

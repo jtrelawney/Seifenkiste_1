@@ -19,9 +19,9 @@ extern end_flag_class G_END_FLAG;
 
 void test_address_book(){
     address_class a1(address_class::platform_type_def::pc,address_class::sensor_type_def::undefined_sensor,address_class::process_type_def::cockpit);
-    address_class a2(address_class::platform_type_def::pc,address_class::sensor_type_def::time_snapshot,address_class::process_type_def::tcp);
+    address_class a2(address_class::platform_type_def::pc,address_class::sensor_type_def::time_snapshot,address_class::process_type_def::tcp_client);
     address_class a3(address_class::platform_type_def::arduino,address_class::sensor_type_def::imu1,address_class::process_type_def::cockpit);
-    address_class a4(address_class::platform_type_def::rpi,address_class::sensor_type_def::camera1,address_class::process_type_def::tcp);
+    address_class a4(address_class::platform_type_def::rpi,address_class::sensor_type_def::camera1,address_class::process_type_def::tcp_server);
     address_class a5(address_class::platform_type_def::rpi,address_class::sensor_type_def::usonic1,address_class::process_type_def::undefined);
 
     int id;
@@ -149,7 +149,7 @@ int main(){
     std::cout << "\n\n================================================================" << std::endl;
 
     address_class cockpit_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::undefined_sensor,address_class::process_type_def::cockpit);
-    address_class tcp_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::undefined_sensor,address_class::process_type_def::tcp);
+    address_class tcp_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::undefined_sensor,address_class::process_type_def::tcp_client);
     
     std::cout << "creating reader processs for cockpit and tcp" << std::endl;
     std::thread reader0_process(reader, cockpit_addr);

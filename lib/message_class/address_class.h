@@ -23,8 +23,9 @@ public:
                                 };
 
     enum process_type_def : int {   cockpit = 0,
-                                    tcp = 1,
-                                    undefined = 2,
+                                    tcp_client = 1,
+                                    tcp_server = 2,
+                                    undefined = 3,
                                     MAX_PROCESS_COUNT = undefined
                                 };    
 
@@ -43,7 +44,7 @@ public:
     process_type_def get_process() const;
 
     // each process has an index, which allows to compare reciepents with process ids
-    int get_process_index() const;
+    //int get_process_index() const;
 
     // output stuff
     friend std::ostream& operator<<(std::ostream& out, const address_class& address);

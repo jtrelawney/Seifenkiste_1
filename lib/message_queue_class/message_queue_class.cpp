@@ -2,11 +2,22 @@
 
 message_queue_class::message_queue_class() :
     message_counter_(0),
+    message_queue_address_(address_class()),
     message_queue_class_debug_level_(MESSAGE_QUEUE_CLASS_DEBUG_LEVEL),
     shut_down_flag_(false),
     q_state_(ok)
 {
     if (message_queue_class_debug_level_>0) std::cout << "message queue : default constructor" << std::endl;
+}
+
+message_queue_class::message_queue_class(address_class message_queue_address) :
+    message_counter_(0),
+    message_queue_address_(message_queue_address),
+    message_queue_class_debug_level_(MESSAGE_QUEUE_CLASS_DEBUG_LEVEL),
+    shut_down_flag_(false),
+    q_state_(ok)
+{
+    if (message_queue_class_debug_level_>0) std::cout << "message queue : constructor called with address " << message_queue_address_ << std::endl;
 }
 
 message_queue_class::~message_queue_class() {
@@ -40,12 +51,20 @@ bool message_queue_class::enqueue(std::unique_ptr<message_class> message){
         std::time_t ct = get_time();
         std::cout << "q ing = " << message_counter_ << " @ " << ct << std::endl;
     }
+    
     // get a lock on the data
     std::lock_guard<std::mutex> lck (message_queue_class_mutex_);
     if (message_queue_class_debug_level_>1) std::cout << "message_queue : enqueue : lock and record the message " << (void*) &message << std::endl;
 
     // first get the address, after queuing the message (and moving ownership) it will be invalid
     address_class recipient = message -> get_recipient_address();
+    // determine the recipient, check if the message is for a different platform or for a process on the same platform
+	if (does_message_need_routing_via_tcp(recipient) == true ) {
+		if (message_queue_class_debug_level_>0) std::cout << "message queue : enqueue : route message via tcp to " << recipient << std::endl;
+		// replace  with the tcp address
+		recipient = get_address_of_tcp_process();
+	}
+
     if (message_queue_class_debug_level_>2) std::cout << "recipient = " << recipient << std::endl;
 
     // now queue the recipient and the message
@@ -63,6 +82,17 @@ bool message_queue_class::enqueue(std::unique_ptr<message_class> message){
 // this is called after a message has been queueu
 // at this point at least one message is in the queue
 // this function notifies the recipeint of the first message in the queue
+// if the recipient is on the same platform -> wakeup
+// if the recipient is on a different platform -> pass to tcp
+
+bool message_queue_class::does_message_need_routing_via_tcp(const address_class &recipient) {
+	bool result = ( message_queue_address_.get_platform() != recipient.get_platform() );
+    if (message_queue_class_debug_level_>1) {
+		std::cout << "message_queue : result doweneedroutingcheck = " << result << std::endl;
+	}
+	return result; 
+}
+        
 // !!! important the caller holds the lock on the message queue mutex
 void message_queue_class::notify_first(){
     // when notify is called the message queue shouldn't be empty, but check anyway
@@ -70,7 +100,7 @@ void message_queue_class::notify_first(){
 
         // determine the recipient and its index in the process table
         address_class recipient = recipient_address_q_.front();
-        int recipient_index = (int) recipient.get_process();
+		int recipient_index = get_process_id(recipient);// recipient.get_process();
         if (message_queue_class_debug_level_>1) std::cout << "q notifies " << recipient << std::endl;
 
         // get the lock on the commmunication mutex, set the flag, release the lock and then notify
@@ -112,7 +142,7 @@ std::unique_ptr<message_class> message_queue_class::dequeue(address_class target
         // at this point the queues are consistent, both the target and the data queue have been removed
     } else {
         if (message_queue_class_debug_level_>1) std::cout << "q  message is for pid = " << stored_recipient << " , notify" << std::endl;
-        int index = (int) stored_recipient.get_process_index();
+        int index = get_process_id(stored_recipient);//(int) stored_recipient.get_process_index();
         G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[index].notify_one();        
     }
     return std::move(dequeued_message);        

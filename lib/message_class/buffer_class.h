@@ -16,7 +16,8 @@
 #include <common.h>
 
 void buffer_class_unit_test();
-const int BUFFER_DEBUG_LEVEL = 3;
+extern const int BUFFER_DEBUG_LEVEL;
+//const int BUFFER_DEBUG_LEVEL = 1;
 
 
 // basic buffer typemade of vector char

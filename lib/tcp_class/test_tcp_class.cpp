@@ -49,7 +49,7 @@ void send_message(tcp_client &client){
 
     platform = address_class::platform_type_def::pc;
     sensor = address_class::sensor_type_def::undefined_sensor;
-    process = address_class::process_type_def::tcp;
+    process = address_class::process_type_def::tcp_client;
     address_class tcp_addr(platform,sensor,process);
 
     // create the message
