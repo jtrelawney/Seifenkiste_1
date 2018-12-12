@@ -24,11 +24,16 @@ class tcp_server: public tcp_class {
 
 private:
 
+    enum receiver_states_ { read_header, read_data, data_complete, wrong_state, error_reading_tcp, client_shutting_down, error_initializing_message, error_inserting_data_into_message, fucked_up, totally_fucked_up };
+
+
     int tcp_server_debug_level_;
 
     // here the received message can be processed
     // for example header verification, data separation, pushing out to a 3rd party interface
     void process_messages();
+    receiver_states_ receive_header_message(const receiver_states_ &current_state, unique_message_ptr &message);
+    receiver_states_ receive_data_message(const receiver_states_ &current_state, unique_message_ptr &message);
 
 public:
 

@@ -227,6 +227,10 @@ buffer_class message_class::create_header_buffer(){
     return std::move(header_buffer);
 }
 
+// this initializes a message from the given header buffer
+// first extract the header paramaters and validate the content
+// if they are extracted directly into the message members this may cause issues later when the message data is inserted or the message is processed otherwise
+// when all parameters are fine create the message
 message_class::message_class(buffer_class &header_buffer) : message_class(){
 
     if (message_debug_level_>0) std::cout << "message_class : constructor with header-buffer" << std::endl;

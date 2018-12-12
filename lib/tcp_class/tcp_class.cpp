@@ -18,6 +18,7 @@ tcp_class::~tcp_class()
     if (tcp_debug_level_>1) std::cout << "\n\ntcp_class : destructor call" << std::endl;
     TCP_close_socket();
     TCP_close_client_session_socket();
+    if (tcp_debug_level_>1) std::cout << "tcp_class : destructor call completed" << std::endl;
 }
 
 // for both client and server - creates the local tcp end point
@@ -66,6 +67,7 @@ int tcp_class::TCP_close_socket(){
     }
 
     // try to shutdown before closing the socket
+    if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : trying to shutdown socket now" << std::endl;
     int result = shutdown(socket_fd_,1);   // parameter 1 = write functionality
     if (result<0) {
         if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : tcp.shutdown socket_fd_ failed, result = " << result << std::endl;
@@ -165,7 +167,7 @@ int tcp_class::TCP_close_client_session_socket(){
 
     if (accepted_connection_fd<0) {
         // fd < 0 - probably has been closed before -> we are done
-        std::cout << "tcp_class : shutdown accepted_connection_fd , accepted_connection_fd < 0" << std::endl;
+        std::cout << "tcp_class : shutdown accepted_connection_fd , accepted_connection_fd < 0, probably shutdown already" << std::endl;
         return -2;
     }
 
@@ -174,7 +176,7 @@ int tcp_class::TCP_close_client_session_socket(){
         std::cout << "tcp_class : shutdown accepted_connection_fd failed, result = " << result << std::endl;
         return result;
     } else {
-        std::cout << "tcp_class : shutdown accepted_connection_fd succesful" << std::endl;
+        std::cout << "tcp_class : shutdown accepted_connection_fd successful" << std::endl;
     }
 
     sleep(1);

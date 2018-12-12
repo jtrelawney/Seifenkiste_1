@@ -9,7 +9,7 @@ echo "start the standard cockpit process" #and set it to stop after it has recei
 #PLATFORM_EXE="build/"$HN"_cockpit"
 
 PLATFORM_EXE="build/pc_cockpit_main"
-./$PLATFORM_EXE 2>&1 &
+./$PLATFORM_EXE 10 2>&1 &
 
 
 echo "waiting for main script to catch up"

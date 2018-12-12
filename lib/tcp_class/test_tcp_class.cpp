@@ -22,7 +22,7 @@ void receive_messages(){
     int result;
     tcp_server server;
     server.set_debug_level(5);    
-    server.set_termination_predicate( []() { std::cout << "test test " << std::endl; return the_end;});
+    server.set_termination_predicate( []() { std::cout << "receive messages : check end flag " << std::endl; return the_end;});
     result = server.start_up();
 
     if ( !(result<0) ) {

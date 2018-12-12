@@ -40,6 +40,7 @@ void run_tcp_server(){
             std::cout << "server returning from blocking call" << std::endl;
         }
     }
+    std::cout << "server done, shutting down now " << std::endl;
     server.shut_down();
 }
 
