@@ -16,8 +16,6 @@ const int TCP_HEADER_LENGTH  = 80;
 
 const int BUFFER_DEBUG_LEVEL = 1;
 
-
-
 // implement a global end flag
 // the static member is initialized in the common.cpp
 class end_flag_class {

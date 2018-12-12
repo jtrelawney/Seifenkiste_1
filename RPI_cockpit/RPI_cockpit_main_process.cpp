@@ -90,6 +90,7 @@ void run_camera_thread(){
             std::cout << "camera process : queuing message" << std::endl;
             G_MESSAGE_QUEUE_PTR->enqueue(std::move(message));
             //if (result<0) std::cout << "error sending message via TCP" << std::endl; //client.print_status();
+            the_end = (frame_count>0);
             
 			if( cv::waitKey(1) >= 0) break;
 
