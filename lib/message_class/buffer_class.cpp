@@ -102,9 +102,13 @@ int buffer_class::get_data_size() {
 
     if (which_type_ == buffer_type_def::cvmat) {
         if (buffer_debug_level_>3) std::cout << "buffer_class : get_data_size()  - cvmat" << std::endl;
-	    cv::Mat *d = data_buffer_.get();
-        unsigned int data_size = d->rows * d->cols * d->channels();
-        return data_size;
+        cv::Mat *cvmat = data_buffer_.get();
+        cvMat_params_class mat_params(*cvmat);
+        return mat_params.get_data_length();
+
+	    //cv::Mat *d = data_buffer_.get();
+        //int data_size = d->rows * d->cols * d->channels();
+        //return data_size;
     }
 
     if (which_type_ == buffer_type_def::invalid_buffer_type) {

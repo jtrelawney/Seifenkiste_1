@@ -121,59 +121,9 @@ message_class::message_class(
     }
 }
 
-/*
-message_class::message_class(
-    // message meta data
-    unsigned int message_id, address_class recipient,
-    // tcp meta data - if required will be set when the messagequeue dispatches to tcp
-    //address_class sender, time_format sender_time,
-    // sensor meta data
-    address_class origin, time_format sensor_time,
-    // data
-    unsigned int data_length, int rows, int cols, int channels, std::unique_ptr<cv::Mat> data_mat_ptr
-    ) : message_id_(message_id), recipient_(recipient),
-        sender_(address_class()), sender_time_(0),
-        origin_(origin), sensor_time_(sensor_time),
-        data_length_(data_length), rows_(rows), cols_(cols), channels_(channels), data_ptr_(std::move(data_mat_ptr)),
-        state_(message_state_def::initialized), message_debug_level_(MESSAGE_DEBUG_LEVEL)
-{
-    if (message_debug_level_>0) std::cout << "message_class : constructor with parameters ..." << std::endl;
-    state_ = message_state_def::complete;
-    if (message_debug_level_>2) print_meta_data();
-}
-*/
-
 message_class::~message_class() {
 	if (message_debug_level_>0) std::cout << "\n\nmessage class - releasing message buffer, object = " << (unsigned long) this << std::endl;
 }
-
-
-
-/*
-message_class::message_class(
-        // sensor message meta data
-        unsigned int message_id, platform_type_class::platform_type_def sender, time_format sender_time, 
-        // sensor meta data
-        platform_type_class::platform_type_def sensor_platform, sensor_type_def sensor_type, time_format sensor_time,
-        // data
-        unsigned int data_length, int rows, int cols, int channels , std::unique_ptr<cv::Mat> data_mat_ptr
-        ) : 
-        //unsigned int data_length, char* data_buffer) : 
-
-        // sensor message meta data
-    	message_id_(message_id), sender_(sender), sender_time_(sender_time),
-        // sensor meta data
-        sensor_platform_(sensor_platform), sensor_type_(sensor_type), sensor_time_(sensor_time), 
-        // sensor data
-    	//data_length_(data_length), data_buffer_(data_buffer), special_param_buffer_(std::vector<char>(SPECIAL_PARAMS_BUFFER_LENGTH,0) ),
-        data_length_(data_length), rows_(rows), cols_(cols), channels_(channels), data_ptr_(std::move(data_mat_ptr)),
-        //object state management
-        state_(message_state_def::initialized), message_debug_level_(MESSAGE_DEBUG_LEVEL)   {
-    
-    if (message_debug_level_>0) std::cout << "message_class : constructor with parameters" << std::endl;
-    state_ = message_state_def::complete;
-}
-*/
 
 // creates a data buffer from the existing message data
 buffer_class message_class::create_data_buffer(){
@@ -325,14 +275,6 @@ int message_class::insert_data_buffer(buffer_class &&data_buffer){
         }
     }
 
-    /*
-    cv::Mat *mat_data = data_ptr_.get();
-    result = result && (rows_ == mat_data -> rows);
-    result = result && (cols_ == mat_data -> cols);
-    result = result && (channels_ == mat_data -> channels());
-    state_ = message_state_def::complete;
-    */
-
     if (result != true) {
         if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer - buffer data does not hhave correct parameters" << std::endl;
         state_ = message_state_def::error_when_constructing_from_buffer;
@@ -350,23 +292,15 @@ message_class::message_state_def message_class::get_state(){ return state_; }
 
 void message_class::print_meta_data(){
 
-    unsigned long address;
-
-	printf("\n-------------------------\n");
-    printf("\n\nmessage metadata:\n");
-    /*
-    if (this == nullptr) {
-        printf("reference is NULL, can't print metadata\n");
-        return;
-    }
-	*/
+	std::cout << "\n-------------------------\n";
+    std::cout << "\n\nmessage metadata:\n";
 	
-    printf("message ptr %lu\n",(unsigned long)this);	
-    if (state_ == initialized) printf("message status = initialized\n");
-    if (state_ == complete) printf("message status = complete\n");
-    if (state_ == invalid) printf("message status = invalid  (corrupted during construction or move operator applied)\n");
-    if (state_ == error_when_constructing_from_buffer) printf("message status = error_when_constructing_from_buffer  (corrupted during construction)\n");
-    if (state_ == data_handed_over_waiting_to_be_marked_for_deletion) printf("message status = data_handed_over_waiting_to_be_marked_for_deletion\n");
+    std::cout << "message ptr" << (unsigned long)this << std::endl;	
+    if (state_ == initialized) std::cout << "message status = initialized\n" << std::endl;	 
+    if (state_ == complete) std::cout << "message status = complete\n" << std::endl;
+    if (state_ == invalid) std::cout << "message status = invalid  (corrupted during construction or move operator applied)\n" << std::endl;
+    if (state_ == error_when_constructing_from_buffer) std::cout << "message status = error_when_constructing_from_buffer\n" << std::endl;
+    if (state_ == data_handed_over_waiting_to_be_marked_for_deletion) std::cout << "message status = data_handed_over_waiting_to_be_marked_for_deletion\n" << std::endl;
 
 	std::cout << "message ID = " << message_id_ << std::endl;
 	std::cout << "recipient : " << recipient_ << std::endl;
@@ -374,26 +308,17 @@ void message_class::print_meta_data(){
     std::cout << "sender time " << sender_time_ << std::endl;
 	std::cout << "sensor = " << origin_ << std::endl;
     std::cout << "sensor_time time " << sensor_time_ << std::endl;
+    unsigned long address = (unsigned long) data_ptr_.get();
+    std::cout << "cvmat address = " << (void*)address << std::endl;
+    std::cout << "cvmat data params" << std::endl;
+    data_params_.print_cvMat_params();
     if (state_ != complete) {
-        data_params_.print_cvMat_params();
-        //std::cout << "data_length : " << data_length_ << std::endl;
-        //std::cout << "data dimensions  rows, cols, channels = " << rows_ << "," << cols_ << "," << channels_ << std::endl;
-        std::cout << "message not complete, data not available" << std::endl;
-    } else {    
-        data_params_.print_cvMat_params();
-        //std::cout << "data_length : " << get_data_size() << std::endl;
-        //std::cout << "data dimensions  rows, cols, channels = " << rows_ << "," << cols_ << "," << channels_ << std::endl;
-        address = (unsigned long) data_ptr_.get();
-        std::cout << "data buffer address = " << (void*)address << std::endl;
-        cv::Mat *data = data_ptr_.get();
-        unsigned char *d = data->data;
-        std::cout << "data address = " << (void *)d << std::endl;
-        int s = data->rows * data->cols * data->channels();
-        std::cout << "data size = " << s << std::endl;
+        std::cout << "message not complete yet, data not available" << std::endl;
+    } else {
         print_data(20);
     }
-        
-	printf("\n\n-------------------------\n");
+    
+    std::cout << "\n-------------------------\n";
 }
 
 void message_class::print_data(unsigned int howmany){
@@ -413,37 +338,7 @@ void message_class::print_data(unsigned int howmany){
     }
 }
 
-unsigned int message_class::get_data_size(){
-    // if the message is complete then return the actual size of the cvmat data
-    if (state_ == complete) {
-        cv::Mat *data = data_ptr_.get();
-        int size = data->rows * data->cols * data->channels();
-        return (unsigned int) size;
-    }
-
-    // if the message is initialized, the data is not yet available, but the length of the excpected data message should be known
-    if (state_ == initialized) {
-        return data_params_.get_data_length(); //data_length_;
-    }
-
-    return 0;
-}
-
-
-
 /*
-// this takes ownership of a given cvmat and determines the related data size params 
-int message_class::push_data(std::unique_ptr<cv::Mat> data_mat){
-    cv::Mat *data_ptr = data_mat.get();
-    rows_ = data_ptr -> rows;
-    cols_ = data_ptr -> cols;
-    channels_ = data_ptr -> channels();
-    data_length_ = rows_ * cols_ * channels_;
-    data_ptr_ = std::move(data_mat);
-    state_ = message_state_def::complete;
-    return 0;
-}
-
 // this creates a cvmat from the buffer, with data size paramters as determined by the header (and already available
 int message_class::push_data(buffer_class &data_buffer){
 

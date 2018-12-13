@@ -41,7 +41,7 @@ else()
     # add flags to both release and debug: -std=c++11 -Wall -pedantic -Wextra -Werror -pthread
     set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -pedantic -Wextra -Werror -pthread")
     # add flags to only debug -g -Og  (valgrind, profiling etc)
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -Og -pg")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -Og") # -pg")
     # add flags to only rekease -O optimizer level 3 and no debugsymbols etc)
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 endif(USE_CALLER_CONFIG)
@@ -148,7 +148,7 @@ add_library(tcp_server_class SHARED tcp_class/tcp_server.cpp)
 add_executable(test_tcp_class tcp_class/test_tcp_class.cpp )
 
 target_link_libraries (tcp_server_class tcp_class message_class buffer_class message_queue_class)
-target_link_libraries (tcp_client_class tcp_class message_class buffer_class)
+target_link_libraries (tcp_client_class tcp_class message_class buffer_class message_queue_class)
 list(APPEND PROJECT_LIBS tcp_server_class tcp_client_class)
 target_link_libraries (test_tcp_class ${PROJECT_LIBS})
 

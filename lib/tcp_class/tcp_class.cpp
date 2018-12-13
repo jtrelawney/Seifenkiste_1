@@ -241,20 +241,37 @@ int tcp_class::TCP_listen(){
 // receive a tcp message with a buffer provided, i.e. the length and the data ptr is given
 int tcp_class::TCP_receive_buffer(buffer_class &message_buffer){
 
+    if ( tcp_state_ != listen_call_succesful) {
+        if (tcp_debug_level_>0)  std::cout << "tcp class : receive_buffer : status is not 'listen_call_successful'" << std::endl;
+        return -1;
+    } else {
+        if (tcp_debug_level_>0)  std::cout << "tcp class : receive_buffer : ready to read, accepted_connection_fd = " << accepted_connection_fd << std::endl;
+    }
+
     int data_size = message_buffer.get_data_size();
     char *data_ptr = message_buffer.get_data_ptr();
-    if (tcp_debug_level_>2)  std::cout << "tcp class : target message length = " << data_size << std::endl;
+    if (tcp_debug_level_>2)  std::cout << "tcp class : receive_buffer : target message length = " << data_size << std::endl;
     if (data_size <= 0) {
-        if (tcp_debug_level_>0) std::cout << "tcp class : message buffer length " << data_size << " too small to receive message" << std::endl;
-        return -1;
+        if (tcp_debug_level_>0) std::cout << "tcp class : receive_buffer : message buffer length " << data_size << " too small to receive message" << std::endl;
+        return -2;
     }
     int message_length_to_receive = data_size;
-    while ( message_length_to_receive >0 ) {
+    while ( message_length_to_receive > 0 ) {
         int received_message_length = read(accepted_connection_fd, data_ptr, message_length_to_receive);
-        message_length_to_receive-=received_message_length;
-        if (tcp_debug_level_>2) std::cout << "tcp class : received message length = " << received_message_length << "      left to receive " << message_length_to_receive << "     from a total of " << data_size << std::endl;
+        // check for error
+        if ( received_message_length<0) {
+                std::cout << "tcp class : receive_buffer : error during tcp read, result = " << received_message_length << std::endl;
+                return -1;
+        } else {
+            message_length_to_receive-=received_message_length;
+            if (tcp_debug_level_>3) {
+                std::cout << "received message length = " << received_message_length;
+                std::cout << "      left to receive " << message_length_to_receive << "     from a total of " << data_size << std::endl;
+            }
+        }
     }
-    if (tcp_debug_level_>1) message_buffer.print_buffer_content();
+    if (tcp_debug_level_>0)  std::cout << "tcp class : receive_buffer : buffer complete" << data_size << std::endl;
+    if (tcp_debug_level_>2) message_buffer.print_buffer_content();
     return data_size;
 }
 
