@@ -14,7 +14,7 @@
 unique_message_ptr integrated_test()
 {
     std::cout << "\n\ncalling unit test messaging class to create a test message" << std::endl;
-    unique_message_ptr test_message = message_class_unit_test_create_test_message(20,50,3,100);
+    unique_message_ptr test_message = message_class_unit_test_create_test_message();
     
     // this is the sitation where the tcp class has taken oawnership of the message with tcp_send(message);
     std::cout << "\n1. create a header buffer" << std::endl;

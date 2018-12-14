@@ -38,10 +38,6 @@ cvMat_params_class::cvMat_params_class(const int &rows, const int &cols, const i
         data_length_ = cols_ * rows_ * elem_size_;
 }
 
-void print_cvMat_data(const int &how_many=10){
-}
-
-
 int cvMat_params_class::get_cols() { return cols_; }    
 int cvMat_params_class::get_rows() { return rows_; }    
 int cvMat_params_class::get_type() { return mat_type_; }
@@ -50,6 +46,7 @@ void cvMat_params_class::get_params( int &rows, int &cols, int &channels, int &e
     rows=rows_; cols=cols_; channels=channels_;elem_size=elem_size_;mat_type=mat_type_;
 }
 void cvMat_params_class::print_cvMat_params(){
+    std::cout << "===================================================" << std::endl;
 	std::cout << "cvMat params     rows =" << rows_ << "   cols = " << cols_ << "  channels = " << channels_ << std::endl;
     std::cout << "elem_size = " << elem_size_ << std::endl;
     int depth_def_index = depth_;
@@ -57,6 +54,7 @@ void cvMat_params_class::print_cvMat_params(){
     std::cout << "depth index = " << depth_def_index << std::endl; 
     std::cout << "depth = " << depth_  << " = " << depth_defs_[depth_def_index] << "  mat type = " << mat_type_ << std::endl; 
     std::cout << "data length = " << data_length_ << "      with cvmat total = " << total_ << std::endl;
+    std::cout << "===================================================" << std::endl;
 }
 
 bool cvMat_params_class::operator==(cvMat_params_class &other){

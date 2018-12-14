@@ -16,7 +16,12 @@
 #include <message_class.h>
 
 
-const int MESSAGE_QUEUE_CLASS_DEBUG_LEVEL = 5;
+#ifndef use_global_debug_setting
+    const int MESSAGE_QUEUE_CLASS_DEBUG_LEVEL = 0;
+#else
+    const int MESSAGE_QUEUE_CLASS_DEBUG_LEVEL = GLOBAL_DEBUG_SETTING;
+#endif
+
 
 // global mutex and condition vars defined for message_queue
 // extern G_QUEUE_COORDINATION_VARS_DEF G_QUEUE_COORDINATION_VARS_OBJ;

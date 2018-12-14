@@ -23,12 +23,12 @@ int tcp_server::shut_down(){
 //tcp_server::receiver_states_ tcp_server::receive_header_message(const receiver_states_ &current_state, unique_message_ptr &message)
 bool tcp_server::receive_header_message(unique_message_ptr &message)
 {
-    // read header message from TCP into buffer
+	// read header message from TCP into buffer
     buffer_class header_buffer(TCP_HEADER_LENGTH);
     int result = tcp_class::TCP_receive_buffer(header_buffer);
     
     // in case of issues nothing to do here
-    if (result < 0 ) return result;
+    if (result < 0 ) return false;
 
     // no issues -> process header
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_header_message : header received, size = " << header_buffer.get_data_size() << std::endl;
@@ -36,27 +36,27 @@ bool tcp_server::receive_header_message(unique_message_ptr &message)
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_header_message : initializing message object" << std::endl;
     message = unique_message_ptr ( new message_class(header_buffer) );
 
-    if (message == nullptr) {
+	std::cout << "tcp_server : message initialized , addr = " << (void *) &message << std::endl;
+	if (message == nullptr) std::cout << "fuck" << std::endl;
+	message_class::message_state_def s = message->get_state();
+	std::cout << "tcp_server : found out state of message " << std::endl;
+	
+    //if (message->get_state() != message_class::message_state_def::initialized) {
+    if ( s != message_class::message_state_def::initialized) {
         if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_header_message : error initializing message with header buffer" << std::endl;
         // dont do that with a nullptr: if (tcp_server_debug_level_ > 1) message -> print_meta_data();
-        result = -10;
+        set_error_state(true, "tcp_server : receive_header_message : error initializing message with header buffer");
+		return false;
     } 
 
     // all fine, return the number of bytes received
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_header_message : message initialized" << std::endl;
     if (tcp_server_debug_level_ > 3) message -> print_meta_data();
-    return result;
+	reset_error_state();
+    return true;
 }
 
 bool tcp_server::receive_data_message(unique_message_ptr &message){
-    message = nullptr;
-    return false;
-
-/*
-    if (current_state != read_data) {
-        if (tcp_server_debug_level_ > 0) std::cout << "\n\ntcp_server : receive_data_message : not in state 'read_data'" << std::endl;
-        return wrong_state;
-    }
 
     // prepare the data buffer and read the data message
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : creating data buffer" << std::endl;
@@ -65,18 +65,10 @@ bool tcp_server::receive_data_message(unique_message_ptr &message){
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : reading data message from tcp" << std::endl;
     int result = tcp_class::TCP_receive_buffer(data_buffer);
 
-    // check return values for issues
-    if (result < 0) {
-        if (tcp_server_debug_level_ > 0) std::cout << "tcp_server : receive_data_message : error receiving data message" << std::endl;
-        return error_reading_tcp;
-    }
+    // in case of issues nothing to do here
+    if (result < 0 ) return false;
 
-    if (result == 0) {
-        if (tcp_server_debug_level_ > 0) std::cout << ("tcp_server : receive_data_message : received 0 length header message - is the client shutting down ???\n");
-        return client_shutting_down;
-    }    
-
-    // no issues -> process header
+    // no issues -> process data buffer
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : data received, size = " << data_buffer.get_data_size() << std::endl;
     if (tcp_server_debug_level_ > 3) data_buffer.print_buffer_content();
 
@@ -87,16 +79,12 @@ bool tcp_server::receive_data_message(unique_message_ptr &message){
     if (result < 0) {
         if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : error inserting data buffer into message" << std::endl;
         //if (tcp_server_debug_level_ > 1) message -> print_meta_data();
-        return error_inserting_data_into_message;
-    } else {
-        if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : message completed" << std::endl;
-        if (tcp_server_debug_level_ > 3) message -> print_meta_data();
-        return data_complete;
-    }
-
-    if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : why are we here" << std::endl;
-    return fucked_up;
-*/
+		set_error_state(true,"tcp_server : receive_data_message : error inserting data buffer into message");
+		return false;
+    } 
+    if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : message completed" << std::endl;
+	if (tcp_server_debug_level_ > 3) message -> print_meta_data();
+	return true;
 }
 
 // return codes
@@ -139,6 +127,13 @@ void tcp_server::print_error_state(const int &error){
         if (tcp_server_debug_level_ > 0) std::cout << "\n\ntcp_server : receive_header_message : not in state 'read_header'" << std::endl;
         return -10;
     }
+    * 
+    *     if (result == 0) {
+        if (tcp_server_debug_level_ > 0) std::cout << ("tcp_server : receive_data_message : received 0 length header message - is the client shutting down ???\n");
+        return client_shutting_down;
+    }    
+
+
 
 }
 */

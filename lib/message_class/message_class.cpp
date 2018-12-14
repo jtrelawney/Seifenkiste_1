@@ -72,7 +72,7 @@ buffer_class message_class::get_properly_sized_empty_data_buffer_according_to_he
 }
 
 std::unique_ptr<cv::Mat> message_class::fetch_data(){
-	if (message_debug_level_>0) std::cout << "message_class : fetch_data : handing over data to caller, now in invalid state" << std::endl;
+	if (message_debug_level_> 1) std::cout << "message_class : fetch_data : handing over data to caller, now in invalid state" << std::endl;
     state_ = message_state_def::data_handed_over_waiting_to_be_marked_for_deletion;
     return std::move(data_ptr_);
 }
@@ -107,7 +107,7 @@ message_class::message_class(
         data_ptr_(std::move(data_mat_ptr)),
         state_(message_state_def::initialized), message_debug_level_(MESSAGE_DEBUG_LEVEL)
 {   
-    if (message_debug_level_>0) std::cout << "message_class : constructor with data ..." << std::endl;
+    if (message_debug_level_> 1) std::cout << "message_class : constructor with data ..." << std::endl;
     if (data_ptr_ == nullptr) {
         if (message_debug_level_>0) std::cout << "message_class : constructor : data is nullptr - invalid" << std::endl;
         state_ = message_state_def::invalid;
@@ -128,7 +128,7 @@ message_class::~message_class() {
 buffer_class message_class::create_data_buffer(){
 
     if (state_ != complete) {
-        std::cout << "message_class : create_data_buffer : incomplete message" << std::endl;
+        if (message_debug_level_>0) std::cout << "message_class : create_data_buffer : incomplete message" << std::endl;
 		std::unique_ptr<cv::Mat> help = std::unique_ptr<cv::Mat> ( nullptr );
 		buffer_class data_buffer(std::move(help));
 		if (data_buffer.get_buffer_type() == buffer_class::buffer_type_def::cvmat) {
@@ -251,8 +251,13 @@ message_class::message_class(buffer_class &header_buffer) : message_class(){
     data_params_.print_cvMat_params();
     // the result variable accumulates the extraction results, they are 0 for success and <0 for issues
     // if all are ok (=0) the header data was valid and has been successfully extracted
-    if (result<0) state_ = message_state_def::error_when_constructing_from_buffer;
-    else state_ = message_state_def::initialized;
+    if (result<0) {
+		state_ = message_state_def::error_when_constructing_from_buffer;
+		if (message_debug_level_>1) std::cout << "message_class : constructor with header buffer : error constructing from buffer , count = " << result << std::endl;
+	} else {
+		state_ = message_state_def::initialized;
+		if (message_debug_level_>1) std::cout << "message_class : constructor with header buffer : success initializing message" << std::endl;
+	}
 }
 
 
@@ -270,7 +275,7 @@ int message_class::insert_data_buffer(buffer_class &&data_buffer){
     if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer : compared message data params with the data buffer params , result = " << result << std::endl;
 
     if (message_debug_level_>2) {
-        std::cout << "message_class : insert_data_buffer : compare the expected and the received data params" << std::endl;
+         if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer : compare the expected and the received data params" << std::endl;
         if (message_debug_level_>2) {
             std::cout << "\n\nexpected:" << std::endl;
             data_params_.print_cvMat_params();
@@ -292,7 +297,10 @@ int message_class::insert_data_buffer(buffer_class &&data_buffer){
     return 0;
 }
 
-message_class::message_state_def message_class::get_state(){ return state_; }
+message_class::message_state_def message_class::get_state(){
+	if (message_debug_level_>1) std::cout << "message_class : get_state() call" << std::endl;
+	return state_;
+}
 
 void message_class::print_meta_data(){
 
@@ -327,8 +335,6 @@ void message_class::print_meta_data(){
 
 void message_class::print_data(unsigned int howmany){
     std::cout << "\nmessage data" << std::endl;
-    std::cout << "\n\n\n message_class : print_data ()  - how and when to use that" << std::endl;
-
     cv::Mat *data = data_ptr_.get();
     unsigned char *d = data->data;
     if (data == nullptr) {

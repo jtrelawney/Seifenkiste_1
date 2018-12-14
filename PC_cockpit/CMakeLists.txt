@@ -35,7 +35,7 @@ project(PC_cockpit)
 # add flags to both release and debug: -std=c++11 -Wall -pedantic -Wextra -Werror -pthread
 set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -pedantic -Wextra -Werror -pthread")
 # add flags to only debug -g -Og  (valgrind, profiling etc)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -Og -pg")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -Og") # -pg")
 # add flags to only rekease -O optimizer level 3 and no debugsymbols etc)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 

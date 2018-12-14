@@ -77,17 +77,19 @@ public:
 
     class error_class {
     private:
-        error_class();
+        error_class(){reset_error_state();};
     public:
         bool error_status_;
         std::string error_message_;
         error_class(bool status, std::string message) : error_status_(status), error_message_(message){};
+        ~error_class(){};
         void set_error_state(const bool status, const std::string &message){ error_message_ = message; error_status_ = status;};
+        void reset_error_state(){ error_message_ = "ok"; error_status_ = false; };
         bool is_error(){ return error_status_;};
         bool read_error_state(std::string &message){ message = error_message_; return error_status_;};
         std::string read_error_message(){ return error_message_;};
     };
-    error_class error_state_;
+    
     std::string read_error_message() { return error_state_.read_error_message(); };
 
 protected:
@@ -109,7 +111,10 @@ protected:
         TCP_close_successful
     };
 
+	error_class error_state_;
 	tcp_state_def tcp_state_;
+	void reset_error_state(){ error_state_.reset_error_state(); };
+	void set_error_state(const bool status, const std::string &message){ error_state_.set_error_state(status, message); };
 
     // not yet working, is supposed to read 0 length and retrieve status
     //int check_buffer(); code see bottom of this file

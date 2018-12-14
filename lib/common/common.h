@@ -12,7 +12,7 @@
 #include "opencv2/opencv.hpp"
 
 #define use_global_debug_setting
-const int GLOBAL_DEBUG_SETTING = 1;
+const int GLOBAL_DEBUG_SETTING = 3;
 
 // consts should move into the init file
 const int TCP_HEADER_LENGTH  = 80;
