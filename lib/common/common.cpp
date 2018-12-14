@@ -26,7 +26,7 @@ cvMat_params_class::cvMat_params_class(const cv::Mat &matrix) {
         channels_ = matrix.channels();
         total_ = matrix.total();
         elem_size_ = matrix.elemSize();
-        data_length_ = cols_ * rows_ * channels_ * elem_size_;
+        data_length_ = cols_ * rows_ * elem_size_;
         //int bytes = Mat.total() * Mat.elemSize();
 }
 
