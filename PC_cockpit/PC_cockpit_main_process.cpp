@@ -11,13 +11,11 @@
 #include "opencv2/opencv.hpp"
 #include <common.h>
 #include <message_class.h>
+
+// message_queue_class.h imports the coordination variables and mutex
 #include <message_queue_class.h>
 #include <sensor_camera_class.h>
 #include <tcp_server.h>
-
-
-// message_queue_class.h imports the coordination variables and mutex
-#include<message_queue_class.h>
 
 // define a global queue object for all processes / objects to refer to using extern 
 message_queue_class *G_MESSAGE_QUEUE_PTR;
@@ -27,7 +25,7 @@ void run_tcp_server(){
 
     std::cout << "\n\n starting TCP server" << std::endl;
     tcp_server server;
-    server.set_debug_level(5);
+    server.set_debug_level(1);
     server.set_queue_ptr(G_MESSAGE_QUEUE_PTR);
     server.set_termination_predicate( []() { std::cout << "calling termination predicate " << std::endl; return G_END_FLAG.read_flag();});
     int result = server.start_up();
@@ -55,19 +53,19 @@ void run_cockpit(){
 
     // get lock then in loop sleep until notified
     std::cout << "cockpit locks its mutex" << std::endl;
-    std::unique_lock<std::mutex> lock_communication_mutex(G_QUEUE_COORDINATION_VARS_OBJ.message_available_mutex[process_index]);
+    std::unique_lock<std::mutex> lock_communication_mutex(G_MESSAGE_QUEUE_PTR -> message_available_mutex[process_index]);
     while(true) {
         std::cout << "\n\n===========================================" << std::endl;
         std::cout << "cockpit releases its mutex and sleeps" << std::endl;
         //G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[reader_index].wait(lock_communication_mutex , G_QUEUE_COORDINATION_VARS_OBJ.condition_flags[reader_index] );
-        G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[process_index].wait(lock_communication_mutex);
+        G_MESSAGE_QUEUE_PTR -> message_available_condition[process_index].wait(lock_communication_mutex);
         std::cout << "cockpit wakes up" << std::endl;
         // after waking up the process holds the lock
         // first check if the shutdown flag was set (message queue only sets shutdown flag if the queue is empty)
         // then check for spuriuos wakeup and process message 
         if (G_MESSAGE_QUEUE_PTR -> get_shut_down_flag() == true) break;
 
-        if ( G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[process_index] == true ) {
+        if ( G_MESSAGE_QUEUE_PTR -> message_available_flag[process_index] == true ) {
             ct = get_time();
             unique_message_ptr message = G_MESSAGE_QUEUE_PTR->dequeue(cockpit_addr);
             std::cout << "\nmessage received " << message->get_id() << std::endl;
@@ -75,7 +73,7 @@ void run_cockpit(){
                 std::unique_ptr<cv::Mat> frame = message->fetch_data();
                 message -> print_meta_data();
                 cv::imshow("usb_camera", *frame);
-                G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[process_index] = false;
+                G_MESSAGE_QUEUE_PTR -> message_available_flag[process_index] = false;
                 //test_message -> print_meta_data();
             }
             if( cv::waitKey(1) >= 0) break;
@@ -115,7 +113,7 @@ int main(int argc, char *argv[])
 
     // create global message queue and endflag
     std::cout << "\n\n\ncreating global message queue" << std::endl;
-    G_MESSAGE_QUEUE_PTR = new message_queue_class();
+    G_MESSAGE_QUEUE_PTR = new message_queue_class(address_class::platform_type_def::pc);
     std::cout << "pulling in global end flag" << std::endl;
     extern end_flag_class G_END_FLAG;
 

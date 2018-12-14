@@ -55,27 +55,24 @@ unique_message_ptr message_class_unit_test_create_test_message(int id, int width
     message -> set_sender_address(sender_addr);
     message -> set_sender_time(sender_time);
 
-    std::cout << "\n\ntest message data created" << std::endl;
+    std::cout << "\n\ntest message complete9" << std::endl;
 
     std::cout << "\n\n\n=============================================================================================" << std::endl;
     return std::move(message);
 }
 
 // this takes the data dimensions as defined by the header data and creates an empty cvmat buffer 
-// used to pass to tcp receipt, which needs a proper cvmat buffer
+// used to pass to tcp receive, which needs a proper cvmat buffer
 buffer_class message_class::get_properly_sized_empty_data_buffer_according_to_header_data(){
-    //std::unique_ptr<cv::Mat> data_mat = std::unique_ptr<cv::Mat> ( new cv::Mat( rows_, cols_, channels_ ) );
-    
     if (message_debug_level_>0) std::cout << "message_class : get_properly_sized_empty_data_buffer_according_to_header_data : creating mat and buffer" << std::endl;
-    std::cout << "message_class : get_properly_sized_empty_data_buffer_according_to_header_data : verify correct params for mat creation!!" << std::endl;
     int rows, cols, channels, elem_size, type;
     data_params_.get_params(rows, cols, channels, elem_size, type);
     std::unique_ptr<cv::Mat> data_mat = std::unique_ptr<cv::Mat> ( new cv::Mat( rows, cols, type) );
-            
     return buffer_class(std::move(data_mat) );
 }
 
 std::unique_ptr<cv::Mat> message_class::fetch_data(){
+	if (message_debug_level_>0) std::cout << "message_class : fetch_data : handing over data to caller, now in invalid state" << std::endl;
     state_ = message_state_def::data_handed_over_waiting_to_be_marked_for_deletion;
     return std::move(data_ptr_);
 }
@@ -88,15 +85,15 @@ void message_class::set_id(unsigned int id){ message_id_ = id;}
 unsigned int message_class::get_id() { return message_id_;}
 time_format message_class::get_sensor_time(){ return sensor_time_;}
 
-
 // default constructor, creates empty shell
 message_class::message_class():
         message_id_(0), recipient_(address_class()),
         sender_(address_class()), sender_time_(0),
         origin_(address_class()), sensor_time_(0),
         //data_length_(0), rows_(0), cols_(0), channels_(0), data_ptr_(nullptr),
-        state_(message_state_def::invalid), message_debug_level_(MESSAGE_DEBUG_LEVEL) {
-    std::cout << "message_class : default constructor is private\n";
+        state_(message_state_def::invalid), message_debug_level_(MESSAGE_DEBUG_LEVEL)
+{
+    if (message_debug_level_>0) std::cout << "message_class : default constructor is private\n";
 }
 
 // constructor, used when all meta and data is available (for example, when the sensor acquires data and passes it on)
@@ -122,28 +119,35 @@ message_class::message_class(
 }
 
 message_class::~message_class() {
-	if (message_debug_level_>0) std::cout << "\n\nmessage class - releasing message buffer, object = " << (unsigned long) this << std::endl;
+	if (message_debug_level_>0) std::cout << "\n\nmessage class - de - structor called - message memroy address = " << (unsigned long) this << std::endl;
 }
 
-// creates a data buffer from the existing message data
+// 
+// if the message state is complete, return a new data buffer from the existing message data
+// if the message is in a different state, then return a data buffer with a nullptr message data
 buffer_class message_class::create_data_buffer(){
 
-    buffer_class data_buffer(std::move(data_ptr_));
-
     if (state_ != complete) {
-        //if (message_debug_level_>0) std::cout << "message_class : create_data_buffer : failed buffer creation, incomplete message" << std::endl;
-        std::cout << "message_class : create_data_buffer : failed buffer creation, incomplete message" << std::endl;
+        std::cout << "message_class : create_data_buffer : incomplete message" << std::endl;
+		std::unique_ptr<cv::Mat> help = std::unique_ptr<cv::Mat> ( nullptr );
+		buffer_class data_buffer(std::move(help));
+		if (data_buffer.get_buffer_type() == buffer_class::buffer_type_def::cvmat) {
+			if (message_debug_level_>0) std::cout << "message_class : create_data_buffer : buffer creation with nullptr successful" << std::endl;
+		} else {
+			if (message_debug_level_>0) std::cout << "message_class : create_data_buffer : buffer creation with nullptr is not of type databuffer, why?" << std::endl;
+		}
+		state_ = message_state_def::data_handed_over_waiting_to_be_marked_for_deletion;
         return data_buffer;
     }
     
+    buffer_class data_buffer(std::move(data_ptr_));
+    state_ = message_state_def::data_handed_over_waiting_to_be_marked_for_deletion;
+    
     if (data_buffer.get_buffer_type() == buffer_class::buffer_type_def::cvmat) {
-        if (message_debug_level_>0) std::cout << "message_class : create_data_buffer : buffer creation successful" << std::endl;
-        state_ = message_state_def::data_handed_over_waiting_to_be_marked_for_deletion;
-        return data_buffer;
+        if (message_debug_level_>0) std::cout << "message_class : create_data_buffer : data buffer creation successful" << std::endl;
     } else {
-        if (message_debug_level_>0) std::cout << "message_class : create_data_buffer : failed buffer creation" << std::endl;
+        if (message_debug_level_>0) std::cout << "message_class : create_data_buffer : buffer created , but not data buffer type, why?" << std::endl;
     }
-
     return data_buffer;
 }
 
@@ -255,7 +259,7 @@ message_class::message_class(buffer_class &header_buffer) : message_class(){
 // after receiving the data message over tcp a buffer with the data can be inserted into the message to make it complete
 int message_class::insert_data_buffer(buffer_class &&data_buffer){
     
-    if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer - storing data from buffer into message" << std::endl;
+    if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer - called to take onwership over the data into message" << std::endl;
 
     // from the buffer extract the cvmat (move logic to take owner ship)
     data_ptr_ = data_buffer.get_cvmat_ptr();
@@ -263,9 +267,9 @@ int message_class::insert_data_buffer(buffer_class &&data_buffer){
     // compare the cvmat parameters
     cvMat_params_class new_data_params(*data_ptr_.get());
     bool result = (data_params_ == new_data_params);
-    std::cout << "received result = " << result << std::endl;
+    if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer : compared message data params with the data buffer params , result = " << result << std::endl;
 
-    if (message_debug_level_>1) {
+    if (message_debug_level_>2) {
         std::cout << "message_class : insert_data_buffer : compare the expected and the received data params" << std::endl;
         if (message_debug_level_>2) {
             std::cout << "\n\nexpected:" << std::endl;
@@ -276,12 +280,12 @@ int message_class::insert_data_buffer(buffer_class &&data_buffer){
     }
 
     if (result != true) {
-        if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer - buffer data does not hhave correct parameters" << std::endl;
+        if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer - buffer data does not have correct parameters" << std::endl;
         state_ = message_state_def::error_when_constructing_from_buffer;
         return -1;
     }
 
-    if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer - buffer data has correct parameters" << std::endl;
+    if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer - sucessfully inserted cvmat into the message" << std::endl;
     data_params_ = new_data_params;
     state_ = message_state_def::complete;
 
@@ -337,91 +341,3 @@ void message_class::print_data(unsigned int howmany){
         std::cout << std::endl;
     }
 }
-
-/*
-// this creates a cvmat from the buffer, with data size paramters as determined by the header (and already available
-int message_class::push_data(buffer_class &data_buffer){
-
-    //remove
-    if (data_buffer.get_data_size()<0) return 0;
-
-    int result = 0;
-    if (state_ != message_state_def::initialized) return -1;
-    
-    // the empty buffer is created by the owner, tcp then reads the data massage with the proper data size
-    // then tcp creates and attaches the cvmat to this buffer
-    // this cvmat needs to be taken over and stored as the data ptr for the message
-
-    std::cout << "message class , push data from buffer" << std::endl;
-
-    // first get the data - it is a cvmat
-    char* get_data_ptr();  // vector.data()
-    int get_data_size();
-    //data_ptr_ = std::move(data_buffer);
-
-    state_ = message_state_def::complete;
-    return result;
-}
-
-
-
-
-//int insert_data_buffer(buffer_type &data_buffer_to_fill){
-
-
-
-// with a given headerbuffer, extract the meta data and initialize the message
-message_class::message_class(buffer_class &header_buffer) : message_class() {
-
-    if (message_debug_level_>0) std::cout << "message_class : constructor with header buffer" << std::endl;
-
-    int result = 0;
-
-	std::string a,b;
-	result+= header_buffer.extract(0,4,a);	    //con
-	result+= header_buffer.extract(34,4,b);	    //end
-    bool proper_header = (a=="head") && (b=="ende");
-
-    if (message_debug_level_>1) {
-        std::cout << "header qualifiers begin and end = " << a << " , " << b << std::endl;
-     	std::cout << "proper header = " << proper_header << std::endl;
-    }
-
-    int rows;
-    unsigned int type_def_value;
-
-    result+= header_buffer.extract(4, message_id_);          // pos 3 size 4
-    result+= header_buffer.extract(8, type_def_value);       // pos 7 size 1
-    sender_ = (platform_type_def) type_def_value;
-    result+= header_buffer.extract(12, sender_time_);         // pos 8 size 4
-    result+= header_buffer.extract(16, type_def_value); //sensor_platform_);    // pos 12 size 1
-    sensor_platform_ = (platform_type_def) type_def_value;
-    result+= header_buffer.extract(20, type_def_value); //sensor_type_);        // pos 13 size 1
-    sensor_type_ = (sensor_type_def) type_def_value;
-    result+= header_buffer.extract(24, sensor_time_);        // pos 14 size 4
-    result+= header_buffer.extract(28, data_length_);        // pos 18 size 4
-    result+= header_buffer.extract(32,rows_);                // pos 22 size 4
-    result+= header_buffer.extract(36,cols_);                // pos 22 size 4
-    result+= header_buffer.extract(40,channels_);                // pos 22 size 4
-    result+= header_buffer.extract(44, rows);                // pos 22 size 4
-
-    if (result<0) state_ = message_state_def::error_when_constructing_from_buffer;
-    else state_ = message_state_def::initialized;
-    
-
-    // the result variable accumulates the extraction results
-    // if all are ok (=0) we return 0 here , ok
-    // if there is at least one failure then the result is negative
-    // for a successful extraction we would have 0 as a total aggregated result.
-    //return result;
-}
-
-
-
-
-
-void message_class::set_id(unsigned int id){ message_id_ = id; }
-
-
-
-*/

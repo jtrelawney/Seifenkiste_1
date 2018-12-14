@@ -11,6 +11,9 @@
 
 #include "opencv2/opencv.hpp"
 
+#define use_global_debug_setting
+const int GLOBAL_DEBUG_SETTING = 1;
+
 // consts should move into the init file
 const int TCP_HEADER_LENGTH  = 80;
 
@@ -57,6 +60,7 @@ public:
     int get_data_length();
     void get_params( int &rows, int &cols, int &channels, int &elem_size, int &mat_type);
     void print_cvMat_params();
+    void print_cvMat_data(const int &how_many=10);
     // should be const, but can't be bothered to track down function signatures after midnight ...
     bool operator==(cvMat_params_class &other);
     ~cvMat_params_class();

@@ -16,11 +16,10 @@
 #include <message_class.h>
 
 
-const int MESSAGE_QUEUE_CLASS_DEBUG_LEVEL = 0;
+const int MESSAGE_QUEUE_CLASS_DEBUG_LEVEL = 5;
 
-extern G_QUEUE_COORDINATION_VARS_DEF G_QUEUE_COORDINATION_VARS_OBJ;
 // global mutex and condition vars defined for message_queue
-//const int G_PROCESS_COUNT = address_class::MAX_PROCESS_COUNT;
+// extern G_QUEUE_COORDINATION_VARS_DEF G_QUEUE_COORDINATION_VARS_OBJ;
 
 
 // define as extern and initialize in the message_queue.cpp file
@@ -35,7 +34,7 @@ class message_queue_class : public G_QUEUE_COORDINATION_VARS_DEF {
 private:
 
     int message_counter_;
-	address_class message_queue_address_;
+	address_class::platform_type_def queue_platform_for_routing_;
 
     // debug output 
     int message_queue_class_debug_level_;
@@ -56,6 +55,7 @@ private:
     std::queue<std::unique_ptr<message_class> > message_q_;
 
 
+    bool is_message_queue_platform_defined();
     bool does_message_need_routing_via_tcp(const address_class &recipient);
     // to notify a process that a message is available
     // only call when the data lock has been obtained
@@ -67,10 +67,10 @@ private:
     //int id;
     //static std::mutex id_mutex;
 
-
-public:
     message_queue_class();
-    message_queue_class(address_class message_queue_address);
+    
+public:
+    message_queue_class(address_class::platform_type_def queue_platform);
     virtual ~message_queue_class();
 
     // add a message at the end of the queue

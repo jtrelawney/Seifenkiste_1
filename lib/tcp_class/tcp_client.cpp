@@ -56,20 +56,20 @@ void tcp_client::keep_processing(){
     std::time_t ct;
     // get lock then in loop sleep until notified
     std::cout << "tcp_client : keep processing : tcp locks its mutex" << std::endl;
-    std::unique_lock<std::mutex> lock_communication_mutex(G_QUEUE_COORDINATION_VARS_OBJ.message_available_mutex[tcp_client_process_id_]);
+    std::unique_lock<std::mutex> lock_communication_mutex(my_queue_ptr_->message_available_mutex[tcp_client_process_id_]);
 
     bool the_end = false;
     while (!(the_end)){
 
         std::cout << "\n\n===========================================" << std::endl;
         std::cout << "tcp_client : keep processing : release mutex and sleep" << std::endl;
-        G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[tcp_client_process_id_].wait(lock_communication_mutex);
+        my_queue_ptr_->message_available_condition[tcp_client_process_id_].wait(lock_communication_mutex);
         // after waking up the process holds the lock
 		ct = get_time();
 		if (tcp_client_debug_level_>1) std::cout << "tcp_client  = " << tcp_client_process_id_ << " wakes up @ " << ct << std::endl;
 
         // check if message is available and if yes send it via tcp
-        if ( G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[tcp_client_process_id_] == true ) {
+        if ( my_queue_ptr_->message_available_flag[tcp_client_process_id_] == true ) {
 
             // fetch and process the message
             unique_message_ptr message = my_queue_ptr_->dequeue(tcp_client_address_);
@@ -81,7 +81,7 @@ void tcp_client::keep_processing(){
 			}
 
             // message processed -> set com flag
-            G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[tcp_client_process_id_] = false;
+            my_queue_ptr_ -> message_available_flag[tcp_client_process_id_] = false;
 
         } else {
             // if woken up, but the data flag is false then check for shutdown, else it is spurious wake up

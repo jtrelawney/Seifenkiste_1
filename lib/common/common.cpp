@@ -38,6 +38,10 @@ cvMat_params_class::cvMat_params_class(const int &rows, const int &cols, const i
         data_length_ = cols_ * rows_ * elem_size_;
 }
 
+void print_cvMat_data(const int &how_many=10){
+}
+
+
 int cvMat_params_class::get_cols() { return cols_; }    
 int cvMat_params_class::get_rows() { return rows_; }    
 int cvMat_params_class::get_type() { return mat_type_; }

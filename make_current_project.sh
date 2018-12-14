@@ -1,9 +1,9 @@
 #!/bin/bash
 
-cd lib/build
+cd /home/ethan/projects/Seifenkiste_1/lib/build
 cmake ..
 make install
-cd ../../PC_cockpit/build
+cd /home/ethan/projects/Seifenkiste_1/PC_cockpit/build
 cmake ..
 make
 

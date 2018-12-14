@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
     // start the client
     std::cout << "\n\n starting the tcp client" << std::endl;
     tcp_client client;
+    client.set_debug_level(0);
     client.start_up();
     
     // now send messages

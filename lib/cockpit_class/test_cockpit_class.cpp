@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
     // create global message queue and pull in the global endflag
     std::cout << "creating global message queue" << std::endl;
-    G_MESSAGE_QUEUE_PTR = new message_queue_class();
+    G_MESSAGE_QUEUE_PTR = new message_queue_class(address_class::platform_type_def::pc);
     std::cout << "pulling global end flag" << std::endl;
     extern end_flag_class G_END_FLAG;
 
