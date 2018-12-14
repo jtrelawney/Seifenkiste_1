@@ -6,4 +6,5 @@ CMakeFiles/
 lib/lib_debug
 lib/lib_run
 lib/lib_include
+*.gch
 
