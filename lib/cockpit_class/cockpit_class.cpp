@@ -43,13 +43,13 @@ void cockpit_class::keep_processing(){
 
     // get lock then in loop sleep until notified
     std::cout << "cockpit locks its mutex" << std::endl;
-    std::unique_lock<std::mutex> lock_communication_mutex(G_QUEUE_COORDINATION_VARS_OBJ.message_available_mutex[cockpit_process_id_]);
+    std::unique_lock<std::mutex> lock_communication_mutex(G_MESSAGE_QUEUE_PTR -> message_available_mutex[cockpit_process_id_]);
     while(G_END_FLAG.read_flag()==false) {
         event_counter_++;
 
         //std::cout << "\n\n===========================================" << std::endl;
         //std::cout << "cockpit releases its mutex and sleeps" << std::endl;
-        G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[cockpit_process_id_].wait(lock_communication_mutex);
+        G_MESSAGE_QUEUE_PTR -> message_available_condition[cockpit_process_id_].wait(lock_communication_mutex);
         // after waking up the process holds the lock
         // check for spuriuos wakeup and process message
 
@@ -57,7 +57,7 @@ void cockpit_class::keep_processing(){
         // if (G_MESSAGE_QUEUE_PTR -> get_shut_down_flag() == true) break;
 
         // check if message is available, if not it is either a spurious wakeup or a the queue is shutting down
-        if ( G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[cockpit_process_id_] == true ) {
+        if ( G_MESSAGE_QUEUE_PTR -> message_available_flag[cockpit_process_id_] == true ) {
 
             ct = get_time();
             if (cockpit_debug_level_>1) std::cout << "cockpit  = " << cockpit_process_id_ << " wakes up @ " << ct << std::endl;
@@ -83,7 +83,7 @@ void cockpit_class::keep_processing(){
             }
 
             // message processed -> set com flag
-            G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[cockpit_process_id_] = false;
+            G_MESSAGE_QUEUE_PTR -> message_available_flag[cockpit_process_id_] = false;
             // check if the shutdown flag was set (message queue only sets shutdown flag if the queue is empty)
             // do that after message has been processed,so that the flag has been set to false, else the queueu thinks the message needs to still be processed
             // if (G_MESSAGE_QUEUE_PTR -> get_shut_down_flag() == true) break;

@@ -14,6 +14,7 @@
 
 // define a global queue object for all processes / objects to refer to using extern 
 message_queue_class *G_MESSAGE_QUEUE_PTR;
+
 // pull in the global end flag to signal the shutdown to entities that are not communicating through condition variables
 extern end_flag_class G_END_FLAG;
 
@@ -29,6 +30,7 @@ void test_address_book(){
 
     std::cout << "registering address = " << a1 << std::endl;
     id = G_MESSAGE_QUEUE_PTR -> register_process(a1);
+	
     std::cout << "received id = " << id << std::endl;
 
     std::cout << "registering address = " << a2 << std::endl;
@@ -78,6 +80,7 @@ void test_address_book(){
 
 
 void reader(const address_class &whoami){
+	
     std::time_t ct;
     std::cout << "registering reader with address " << whoami << std::endl;
     int myid = G_MESSAGE_QUEUE_PTR -> register_process(whoami);
@@ -85,19 +88,19 @@ void reader(const address_class &whoami){
 
     // get lock then in loop sleep until notified
     std::cout << "reader " << myid << " locks its mutex" << std::endl;
-    std::unique_lock<std::mutex> lock_it(G_QUEUE_COORDINATION_VARS_OBJ.message_available_mutex[myid]);
+    std::unique_lock<std::mutex> lock_it(G_MESSAGE_QUEUE_PTR -> message_available_mutex[myid]);
     while(true) {
         std::cout << "\n\n===========================================" << std::endl;
         std::cout << "reader " << myid << " releases its mutex and sleeps" << std::endl;
-        G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[myid].wait(lock_it);
+        G_MESSAGE_QUEUE_PTR -> message_available_condition[myid].wait(lock_it);
 
         ct = get_time();
         std::cout << "reader " << myid << " wakes up @ " << ct << std::endl;
 
-        if ( G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[myid] == true) {
+        if ( G_MESSAGE_QUEUE_PTR -> message_available_flag[myid] == true) {
             unique_message_ptr test_message = G_MESSAGE_QUEUE_PTR->dequeue(whoami);
             std::cout << "\nmessage received " << std::endl;
-            G_QUEUE_COORDINATION_VARS_OBJ.message_available_flag[myid] = false;
+            G_MESSAGE_QUEUE_PTR -> message_available_flag[myid] = false;
             //test_message -> print_meta_data();
         } else {
             // when woken up read data, unless shutdown flag is set, then break
@@ -142,10 +145,10 @@ int main(){
 
     // create global message queue
     std::cout << "creating global message queue" << std::endl;
-    G_MESSAGE_QUEUE_PTR = new message_queue_class();
-    G_MESSAGE_QUEUE_PTR -> set_debug_level(5);
-
-    test_address_book();
+    G_MESSAGE_QUEUE_PTR = new message_queue_class(address_class::platform_type_def::pc);
+    G_MESSAGE_QUEUE_PTR -> set_debug_level(1);
+    
+    //test_address_book();
     std::cout << "\n\n================================================================" << std::endl;
 
     address_class cockpit_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::undefined_sensor,address_class::process_type_def::cockpit);

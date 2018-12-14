@@ -24,7 +24,12 @@ typedef std::unique_ptr<message_class> unique_message_ptr;
 // not only used in the unit test, but also for other tests
 unique_message_ptr message_class_unit_test_create_test_message(int id = 1, int width=3, int height=3, int depth=3, int init=100, bool with_output=false);
 
-const int MESSAGE_DEBUG_LEVEL = 0;
+
+#ifndef use_global_debug_setting
+    const int MESSAGE_DEBUG_LEVEL = 0;
+#else
+    const int MESSAGE_DEBUG_LEVEL = GLOBAL_DEBUG_SETTING;
+#endif
 
 class message_class {
 public:

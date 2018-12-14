@@ -75,6 +75,21 @@ public:
     // prints the fd descriptor information
     void TCP_print_fd_info();
 
+    class error_class {
+    private:
+        error_class();
+    public:
+        bool error_status_;
+        std::string error_message_;
+        error_class(bool status, std::string message) : error_status_(status), error_message_(message){};
+        void set_error_state(const bool status, const std::string &message){ error_message_ = message; error_status_ = status;};
+        bool is_error(){ return error_status_;};
+        bool read_error_state(std::string &message){ message = error_message_; return error_status_;};
+        std::string read_error_message(){ return error_message_;};
+    };
+    error_class error_state_;
+    std::string read_error_message() { return error_state_.read_error_message(); };
+
 protected:
 
 	// object state

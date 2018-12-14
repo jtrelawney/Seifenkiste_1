@@ -10,7 +10,7 @@
 //#include <common.h>
 //extern end_flag_class G_END_FLAG;
 
-const int TCP_SERVER_DEBUG_LEVEL = 0;
+const int TCP_SERVER_DEBUG_LEVEL = 6;
 #include <tcp_class.h>
 
 #include <buffer_class.h>
@@ -32,8 +32,9 @@ private:
     // here the received message can be processed
     // for example header verification, data separation, pushing out to a 3rd party interface
     void process_messages();
-    receiver_states_ receive_header_message(const receiver_states_ &current_state, unique_message_ptr &message);
-    receiver_states_ receive_data_message(const receiver_states_ &current_state, unique_message_ptr &message);
+    bool receive_header_message(unique_message_ptr &message);
+    bool receive_data_message(unique_message_ptr &message);
+    int queue_message(unique_message_ptr &&message);
 
 public:
 
