@@ -147,8 +147,27 @@ int tcp_class::TCP_send_buffer(buffer_class &&buffer){
 		return -1;
 	}
 	
-    if (tcp_debug_level_>1) std::cout << "tcp_class : send buffer : connection to " << server_ip_address_ << " on port " << port_number_ << " is ready" << std::endl;
-   
+    if (tcp_debug_level_>1) std::cout << "tcp_class : send_buffer : connection to " << server_ip_address_ << " on port " << port_number_ << " is ready" << std::endl;
+
+	int message_length_to_write = target_length;
+	while ( message_length_to_write > 0 ) {
+		int written_message_length = write(socket_fd_, data_ptr, message_length_to_write);
+		// check for error
+		if ( written_message_length<0) {
+				std::cout << "tcp class : send_buffer : error during tcp write, result = " << written_message_length << std::endl;
+				return -1;
+		} else {
+			message_length_to_write-=written_message_length;
+			if (tcp_debug_level_>3) {
+				std::cout << "written message length = " << written_message_length;
+				std::cout << "      left to write " << message_length_to_write << "     from a total of " << target_length << std::endl;
+			}
+		}
+	}
+	
+	if (tcp_debug_level_>0)  std::cout << "tcp class : send_buffer : message write complete , bytes sent = " << target_length << std::endl;
+        
+	/*
     int n = write(socket_fd_, data_ptr, target_length);
     if (n < 0) {
         if (tcp_debug_level_>0) std::cout << "tcp_class : send buffer : error writing buffer to socket" << std::endl;
@@ -160,7 +179,8 @@ int tcp_class::TCP_send_buffer(buffer_class &&buffer){
         std::cout << "tcp_class : send buffer : implement case when fewer bytes are written than requested" << std::endl;
         return -2;
     }
-    return n;
+	*/
+	return target_length;
 }
 
 int tcp_class::TCP_close_client_session_socket(){
@@ -270,7 +290,7 @@ int tcp_class::TCP_receive_buffer(buffer_class &message_buffer){
             }
         }
     }
-    if (tcp_debug_level_>0)  std::cout << "tcp class : receive_buffer : buffer complete" << data_size << std::endl;
+    if (tcp_debug_level_>0)  std::cout << "tcp class : receive_buffer : buffer complete , bytes received = " << data_size << std::endl;
     if (tcp_debug_level_>2) message_buffer.print_buffer_content();
     return data_size;
 }

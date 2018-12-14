@@ -33,7 +33,9 @@ cvMat_params_class::cvMat_params_class(const cv::Mat &matrix) {
 cvMat_params_class::cvMat_params_class(const int &rows, const int &cols, const int &channels, const int &elem_size, const int &mat_type) :
     cols_(cols),rows_(rows),mat_type_(mat_type),depth_(-1),channels_(channels),total_(-1),elem_size_(elem_size),data_length_(-1)
 {
-        data_length_ = cols_ * rows_ * channels_ * elem_size_;
+		// this is wrong: elemsize contains the datasize per pixel * channels, use elemsize1 and it would work
+        //data_length_ = cols_ * rows_ * channels_ * elem_size_;
+        data_length_ = cols_ * rows_ * elem_size_;
 }
 
 int cvMat_params_class::get_cols() { return cols_; }    
