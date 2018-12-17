@@ -12,6 +12,7 @@
 
 const int TCP_SERVER_DEBUG_LEVEL = 6;
 #include <tcp_class.h>
+#include <return_type_class.h>
 
 #include <buffer_class.h>
 #include <address_class.h>
@@ -23,9 +24,6 @@ const int TCP_SERVER_DEBUG_LEVEL = 6;
 class tcp_server: public tcp_class {
 
 private:
-
-    enum receiver_states_ { read_header, read_data, data_complete, wrong_state, error_reading_tcp, client_shutting_down, error_initializing_message, error_inserting_data_into_message, fucked_up, totally_fucked_up };
-
 
     int tcp_server_debug_level_;
 

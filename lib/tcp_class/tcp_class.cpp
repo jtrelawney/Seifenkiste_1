@@ -9,7 +9,6 @@
 
 // initialize the object, only sets the members, no action (for that call startup()
 tcp_class::tcp_class() :
-    error_state_(error_class(false,"ok")),
     tcp_state_(tcp_initialized),
     port_number_(-1),
     socket_fd_(-1),
@@ -34,53 +33,86 @@ tcp_class::~tcp_class()
 // if the state is not "initiliazed then it means that the socket exists already or some other error has occured
 // handling of the former is not yet implmeneted, latter leads to status socket_error
 // returns the new fd
-int tcp_class::TCP_create_socket(const int &portno)
+tcp_error_def tcp_class::TCP_create_socket(const int &portno)
 {
     // check if status is acceptable to create a socket, which is the first thing to be done during statup
-    bool ready_to_create_socket = ( (tcp_state_ == tcp_initialized) && (socket_fd_ == -1) && (port_number_ == -1) );
-    if ( !(ready_to_create_socket) ) {
-        if (tcp_debug_level_> 0) {
+    if (tcp_state_ != tcp_initialized) {
+		if (tcp_debug_level_> 0) {
             std::cout << "tcp class : create socket call : called in wrong state" << std::endl;
-            TCP_print_status();
-            TCP_print_fd_info();
-            std::cout << "tcp class : create socket call : port_number = " << port_number_ << std::endl;
-        }
-        std::cout << "TODO : MANAGE STATE IN CASE OF EXISTING CONNECTION/ SOCKET" << std::endl;
-        tcp_state_ = socket_error;
-        return -1;
-    }
-    
+			TCP_print_status();
+		}
+		// leave unchanged tcp_state_def = ;
+		error_state_ = wrong_state_for_transition;
+		error_category_ = warning;
+		return error_state_;
+	}
+	
+    if (socket_fd_ != -1) {
+		if (tcp_debug_level_> 0) {
+			std::cout << "tcp class : create socket call : socket already exists, should be -1" << std::endl;
+			TCP_print_fd_info();
+		}
+		error_state_ = socket_already_created;
+		error_category_ = warning;
+		return error_state_;
+	}
+
+    if (port_number_ == -1) {
+		if (tcp_debug_level_> 0) {
+			std::cout << "tcp class : create socket call : port_number not defined = " << port_number_ << std::endl;
+		}
+		error_state_ = portnumber_undefined;
+		error_category_ = warning;
+		return error_state_;
+	}
+
+	// at this point we should be ready to create the socket
     // state found to be acceptable to create a socket
     socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd_ < 0) {
-        tcp_state_ = socket_error;
         if (tcp_debug_level_> 0) std::cout << "tcp class : create socket : attempt to create a socket failed" << std::endl;
-    } else {
-        tcp_state_ = socket_created;
-        port_number_ = portno;
-        if (tcp_debug_level_> 0) std::cout << "tcp class : create socket : attempt to create a socket succesful" << std::endl;
+		error_state_ = error_creating_socket;
+		error_category_ = warning;
+		return error_state_;
     }
-    return socket_fd_;
+    
+	port_number_ = portno;
+	if (tcp_debug_level_> 0) std::cout << "tcp class : create socket : attempt to create a socket succesful" << std::endl;
+	tcp_state_ = socket_created;
+	error_state_ = no_error;
+	error_category_ = ok;
+	return error_state_;
 }
 
 // closes the local socket
 // for that the socket_fd needs to exist and an existing connection needs to be shtudown first before the socket can be closed
-int tcp_class::TCP_close_socket(){
+tcp_error_def tcp_class::TCP_close_socket(){
 
     // fd < 0 - socket probably has never been opened or has been closed before
     if (socket_fd_< 0) {
         if (tcp_debug_level_> 0) std::cout << "tcp_class : close_socket : current socket fd < 0 -> it is closed already" << std::endl;
-        return -2;
+		// dont change tcp_state_ = ;
+		error_state_ = socket_not_open;
+		error_category_ = warning;
+		return error_state_;
     }
 
     // try to shutdown before closing the socket
     if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : trying to shutdown socket now" << std::endl;
     int result = shutdown(socket_fd_,1);   // parameter 1 = write functionality
+    
     if (result<0) {
         if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : tcp.shutdown socket_fd_ failed, result = " << result << std::endl;
-        return result;
+        // dont change tcp_state_ = ;
+		error_state_ = shutdown_socket_failed;
+		error_category_ = warning;
+		return error_state_;
     } else {
         if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : shutdown socket_fd_ succesful" << std::endl;
+        tcp_state_ = tcp_close_successful;
+		error_state_ = no_error;
+		error_category_ = ok;
+		return error_state_;
     }
 
     sleep(1);
@@ -88,16 +120,19 @@ int tcp_class::TCP_close_socket(){
     result = close(socket_fd_);
     if (result<0) {
         if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : close socket_fd_ failed, result = " << result << std::endl;
-        return result;
-    } else {
-        if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : close socket_fd_ succesful, set status = initialized" << std::endl;
-        // reset the status completely
-        socket_fd_ = -1;
-        port_number_ = -1;
-        tcp_state_ = tcp_initialized;
+        error_state_ = close_socket_failed;
+		error_category_ = warning;
+		return error_state_;
     }
-
-    return result;
+    
+	if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : close socket_fd_ succesful, set status = initialized" << std::endl;
+	// reset the status completely
+	socket_fd_ = -1;
+	port_number_ = -1;
+	tcp_state_ = tcp_initialized;
+	error_state_ = no_error;
+	error_category_ = ok;
+	return error_state_;
 }
 
 // this is a client function
@@ -106,7 +141,7 @@ int tcp_class::TCP_close_socket(){
 // this returns the result of the connect call, if ok the state is set to tcp_connect_successfull
 // failure is either an issue to resolve the ip address or during connect
 // this currently doesn't check if the fd has been created
-int tcp_class::TCP_connect(std::string server_ip){
+tcp_error_def tcp_class::TCP_connect(std::string server_ip){
 
     server_ip_address_ = server_ip;
     const char *server_addr = server_ip_address_.c_str();
@@ -115,43 +150,53 @@ int tcp_class::TCP_connect(std::string server_ip){
     int result = get_host_info(server_addr);
     if (result<0) {
         if (tcp_debug_level_>0) std::cout << "tcp_class : connect : get_host_info call failed for ip = " << server_ip_address_ << std::endl;
-        tcp_state_ = gethost_error;
-        return -1;
+		// dont change tcp_state_ = tcp_initialized;
+		error_state_ = gethost_error;
+		error_category_ = warning;
+		return error_state_;
     }
 
 	result = connect(socket_fd_,(struct sockaddr *)&server_socket_info, sizeof(server_socket_info));
 	if (result < 0) {
         if (tcp_debug_level_>0) std::cout << "tcp_class : connect : error connecting to server, addr = " << server_ip_address_ << std::endl;
-		tcp_state_ = tcp_connect_error;
-		return -1;
-	} else {
-        if (tcp_debug_level_>0) std::cout << "tcp_class : connect successfully connected to server, addr = " << server_ip_address_ << std::endl;
-		tcp_state_ = tcp_connect_successful;
-		return result;
-    }
-
+		error_state_ = tcp_connect_error;
+		error_category_ = warning;
+		return error_state_;
+	}
+	
+	if (tcp_debug_level_>0) std::cout << "tcp_class : connect successfully connected to server, addr = " << server_ip_address_ << std::endl;
+	tcp_state_ = tcp_connect_successful;
+	error_state_ = no_error;
+	error_category_ = ok;
 	if (tcp_debug_level_>1)  std::cout << "tcp_class : connect : connection ready" << std::endl;
-    return result;
+	return error_state_;
 }
 
 // this sends a given buffer over an established connection
 // the buffer implements acess to char*, length (and could be any data object e.g. header, sensor data etc)
 
 //int tcp_class::TCP_send_buffer(const buffer_class &buffer){
-int tcp_class::TCP_send_buffer(buffer_class &&buffer){
+tcp_error_def tcp_class::TCP_send_buffer(buffer_class &&buffer){
 //int tcp_class::TCP_send_buffer(buffer_class buffer){
 
     int target_length = buffer.get_data_size();
     char *data_ptr = buffer.get_data_ptr();
     if (tcp_debug_level_>1) std::cout << "tcp_class : send_buffer : transmitting buffer_class object, length = " << target_length << std::endl;
+    
     if (target_length <= 0) {
         std::cout << "tcp class : send buffer : message buffer length " << target_length << " too small to be sent as a message" << std::endl;
-        return -1;
+		// dont change tcp_state_ = tcp_connect_successful;
+		error_state_ = buffer_too_small;
+		error_category_ = warning;
+		return error_state_; 
     }
 
 	if (tcp_state_!=tcp_connect_successful) {
 		if (tcp_debug_level_>0) std::cout << "tcp_class : send_buffer : TCP socket not ready for a connection" << std::endl;
-		return -1;
+		// dont change tcp_state_ = tcp_connect_successful;
+		error_state_ = write_failed_no_connection;
+		error_category_ = warning;
+		return error_state_; 
 	}
 	
     if (tcp_debug_level_>1) std::cout << "tcp_class : send_buffer : connection to " << server_ip_address_ << " on port " << port_number_ << " is ready" << std::endl;
@@ -162,7 +207,10 @@ int tcp_class::TCP_send_buffer(buffer_class &&buffer){
 		// check for error
 		if ( written_message_length<0) {
 				std::cout << "tcp class : send_buffer : error during tcp write, result = " << written_message_length << std::endl;
-				return -1;
+				// dont change tcp_state_ = tcp_connect_successful;
+				error_state_ = tcp_write_failed;
+				error_category_ = warning;
+				return error_state_; 
 		} else {
 			message_length_to_write-=written_message_length;
 			if (tcp_debug_level_>3) {
@@ -174,34 +222,29 @@ int tcp_class::TCP_send_buffer(buffer_class &&buffer){
 	
 	if (tcp_debug_level_>0)  std::cout << "tcp class : send_buffer : message write complete , bytes sent = " << target_length << std::endl;
         
-	/*
-    int n = write(socket_fd_, data_ptr, target_length);
-    if (n < 0) {
-        if (tcp_debug_level_>0) std::cout << "tcp_class : send buffer : error writing buffer to socket" << std::endl;
-        return n;
-    }
-
-    if (n < target_length) {
-        if (tcp_debug_level_>0) std::cout << "tcp_class : send buffer : of " << target_length << " bytes only written " << n << std::endl;
-        std::cout << "tcp_class : send buffer : implement case when fewer bytes are written than requested" << std::endl;
-        return -2;
-    }
-	*/
-	return target_length;
+    // dont change, no good state, just temprorary tcp_state_ = tcp_connect_successful;
+	error_state_ = tcp_write_successful;
+	error_category_ = ok;
+	return error_state_; 
 }
 
-int tcp_class::TCP_close_client_session_socket(){
+tcp_error_def tcp_class::TCP_close_client_session_socket(){
 
     if (accepted_connection_fd<0) {
         // fd < 0 - probably has been closed before -> we are done
         std::cout << "tcp_class : shutdown accepted_connection_fd , accepted_connection_fd < 0, probably shutdown already" << std::endl;
-        return -2;
+		// dont change, no good state, just temprorary tcp_state_ = tcp_connect_successful;
+		error_state_ = no_client_connection_to_close;
+		error_category_ = warning;
+		return error_state_;
     }
 
     int result = shutdown(accepted_connection_fd,1);   // parameter 1 = write functionality
     if (result<0) {
         std::cout << "tcp_class : shutdown accepted_connection_fd failed, result = " << result << std::endl;
-        return result;
+		error_state_ = shutdown_socket_failed;
+		error_category_ = warning;
+		return error_state_;
     } else {
         std::cout << "tcp_class : shutdown accepted_connection_fd successful" << std::endl;
     }
@@ -211,18 +254,21 @@ int tcp_class::TCP_close_client_session_socket(){
     result = close(accepted_connection_fd);
     if (result<0) {
         std::cout << "tcp_class : close accepted_connection_fd failed, result = " << result << std::endl;
-        return result;
-    } else {
-        std::cout << "tcp_class : close accepted_connection_fd succesful" << std::endl;
-        accepted_connection_fd = -1;
+		error_state_ = close_socket_failed;
+		error_category_ = warning;
+		return error_state_;
     }
-
-    return result;
+	std::cout << "tcp_class : close accepted_connection_fd succesful" << std::endl;
+	accepted_connection_fd = -1;
+	tcp_state_ = tcp_initialized;
+	error_state_ = no_error;
+	error_category_ = ok;
+	return error_state_;
 }
 
 // creates a socket at the given port, binds and listens
 // sets the internal socketfd for the connect
-int tcp_class::TCP_bind(){
+tcp_error_def tcp_class::TCP_bind(){
 
     // assume result ok
     int result = 0;
@@ -236,17 +282,21 @@ int tcp_class::TCP_bind(){
     //std::cout << "binding to socket, ready to listen" << std::endl;
     result = bind(socket_fd_, (struct sockaddr *) &server_socket_info, sizeof(server_socket_info));
     if (result < 0) {
-        tcp_state_ = bind_call_failed; 
         if (tcp_debug_level_>0) std::cout << "tcp server : bind call failed" << std::endl;
+		//tcp_state_ = tcp_initialized;
+		error_state_ = bind_call_failed;
+		error_category_ = warning;
+		return error_state_;
     }
-    else {
-        tcp_state_ = bind_call_successful;
-        if (tcp_debug_level_>0) std::cout << "tcp server : bind call succesful" << std::endl;
-    }
-    return result;
+
+	if (tcp_debug_level_>0) std::cout << "tcp server : bind call succesful" << std::endl;
+	tcp_state_ = bind_call_successful;
+	error_state_ = no_error;
+	error_category_ = ok;
+	return error_state_;
 }
 
-int tcp_class::TCP_listen(){
+tcp_error_def tcp_class::TCP_listen(){
 
     // assume result ok
     int result = 0;
@@ -254,15 +304,18 @@ int tcp_class::TCP_listen(){
     std::cout << "starting to listen to socket" << std::endl;
     result = listen(socket_fd_,5);
     if (result < 0) {
-        tcp_state_ = listen_call_failed; 
         if (tcp_debug_level_>0) std::cout << "tcp server : listen call failed" << std::endl;
+		//tcp_state_ = bind_call_successful;
+		error_state_ = listen_call_failed;
+		error_category_ = warning;
+		return error_state_;
     }
-    else {
-        tcp_state_ = listen_call_succesful;
-        if (tcp_debug_level_>0) std::cout << "tcp server : listen call succesful" << std::endl;
-    }
-
-    return result;
+    
+	if (tcp_debug_level_>0) std::cout << "tcp server : listen call succesful" << std::endl;
+	tcp_state_ = listen_call_succesful;
+	error_state_ = no_error;
+	error_category_ = ok;
+	return error_state_;
 }
 
 // receive a tcp message with a buffer provided, i.e. the length and the data ptr is given
@@ -273,12 +326,15 @@ int tcp_class::TCP_listen(){
 // -4 : message length received = 0 : has client terminated the connection?
 // > 0: number of bytes received
 
-int tcp_class::TCP_receive_buffer(buffer_class &message_buffer){
+//Return_type<buffer_class> tcp_class::TCP_receive_buffer(buffer_class &&message_buffer){
+tcp_error_def tcp_class::TCP_receive_buffer(buffer_class &message_buffer){
 
     if ( tcp_state_ != listen_call_succesful) {
         if (tcp_debug_level_>0)  std::cout << "tcp class : receive_buffer : status is not 'listen_call_successful'" << std::endl;
-		error_state_.set_error_state(false, "tcp class : receive_buffer : status is not 'listen_call_successful'");
-        return -1;
+		//tcp_state_ = listen_call_succesful;
+		error_state_ = wrong_state_for_transition;
+		error_category_ = warning;
+		return error_state_;
     } else {
         if (tcp_debug_level_>0)  std::cout << "tcp class : receive_buffer : ready to read, accepted_connection_fd = " << accepted_connection_fd << std::endl;
     }
@@ -289,8 +345,9 @@ int tcp_class::TCP_receive_buffer(buffer_class &message_buffer){
     if (data_size <= 0) {
         if (tcp_debug_level_>0) std::cout << "tcp class : receive_buffer : message buffer length " << data_size << " too small to receive message" << std::endl;
 		std::string em = "tcp class : receive_buffer : message buffer length " + std::to_string(data_size) + " too small to receive message";
-		error_state_.set_error_state(false,em);
-        return -2;
+		error_state_ = buffer_too_small;
+		error_category_ = warning;
+		return error_state_;
     }
 
     int message_length_to_receive = data_size;
@@ -301,15 +358,17 @@ int tcp_class::TCP_receive_buffer(buffer_class &message_buffer){
         if ( received_message_length<0) {
                 std::cout << "tcp class : receive_buffer : error during tcp read, result = " << received_message_length << std::endl;
 				std::string em = "tcp class : receive_buffer : error during tcp read, result = " + std::to_string(received_message_length);
-				error_state_.set_error_state(false,em);
-                return -3;
+				error_state_ = tcp_read_failed;
+				error_category_ = warning;
+				return error_state_;
         }
 
         if ( received_message_length==0) {
                 std::cout << "tcp class : receive_buffer : recieved message length 0 , is client shutting down ???" << received_message_length << std::endl;
 				std::string em = "tcp class : receive_buffer : recieved message length 0 , is client shutting down ???" + std::to_string(received_message_length);
-				error_state_.set_error_state(false,em);
-                return -4;
+				error_state_ = client_shutting_down;
+				error_category_ = warning;
+				return error_state_;
         }
 
         // no errors, keep counting
@@ -322,30 +381,39 @@ int tcp_class::TCP_receive_buffer(buffer_class &message_buffer){
 
     if (tcp_debug_level_>0)  std::cout << "tcp class : receive_buffer : buffer complete , bytes received = " << data_size << std::endl;
     if (tcp_debug_level_>2) message_buffer.print_buffer_content();
-    return data_size;
+    
+  	//tcp_state_ = listen_call_succesful;
+	error_state_ = tcp_read_successful;
+	error_category_ = ok;
+	return error_state_;
 }
 
 
 // connect to the previously initialized socket and return the fd
-int tcp_class::TCP_accept_connection(){
+tcp_error_def tcp_class::TCP_accept_connection(){
 
     unsigned int client_info_len = sizeof(client_socket_info);
 	int new_connection_fd = accept(socket_fd_, (struct sockaddr *) &client_socket_info, &client_info_len);
 	if (new_connection_fd < 0) {
         if (tcp_debug_level_>-1) std::cout << "tcp class : accept connection - failed" << std::endl;
-        return -1;
+		error_state_ = accept_connection_failed;
+		error_category_ = warning;
+		return error_state_;
     }
 
     accepted_connection_fd = new_connection_fd;
     if (tcp_debug_level_>-1) std::cout << "tcp class : accept connection succeeded - fd = " << accepted_connection_fd << std::endl;
+	error_state_ = accept_connection_successeful;
+	error_category_ = ok;
+	return error_state_;
 
-    return new_connection_fd;
+    //return new_connection_fd;
 }
 
 void tcp_class::TCP_print_status(){
 
     std::cout << "tcp_class : print status information " << std::endl;
-	switch(tcp_state_){
+	switch( (int)tcp_state_){
 		
 		case tcp_initialized:
   			std::cout << "tcp_class : status = TCP object initialized" << std::endl;
@@ -353,8 +421,8 @@ void tcp_class::TCP_print_status(){
         case socket_created:
   			std::cout << "tcp_class : status = TCP socket created, port = " << port_number_ << std::endl;
 			break;
-		case socket_error:
-			std::cout << "tcp_class : status = failed to create socket" << std::endl;
+		case error_creating_socket:
+			std::cout << "tcp_class : status = error creating socket" << std::endl;
 			break;
 		case gethost_successful:
 			std::cout << "tcp_class : status = host information resolved" << std::endl;
@@ -401,7 +469,7 @@ int tcp_class::get_host_info(const char *server_addr){
 	host_info = gethostbyname(server_addr);
     if (host_info == NULL) {
         if (tcp_debug_level_>0) std::cout << "tcp_class : error resolving host information for " << server_ip_address_ << std::endl;
-        tcp_state_ = gethost_error;
+        error_state_ = gethost_error;
         result = -1;
     }   else {
         if (tcp_debug_level_>0) std::cout << "tcp_class : host information resolved" << std::endl;

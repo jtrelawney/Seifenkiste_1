@@ -26,10 +26,19 @@ bool tcp_server::receive_header_message(unique_message_ptr &message)
 	// read header message from TCP into buffer
     buffer_class header_buffer(TCP_HEADER_LENGTH);
     int result = tcp_class::TCP_receive_buffer(header_buffer);
+    //Return_type<buffer_class> result = tcp_class::TCP_receive_buffer(std::move(header_buffer));
     
     // in case of issues nothing to do here
     if (result < 0 ) return false;
-
+	/*
+	if (result) {
+		std::cout << "honkey dorey" << std::endl;
+	} else {
+		std::cout << "error" << std::endl;
+		header_buffer = result.unwrap();
+	}
+	*/
+	
     // no issues -> process header
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_header_message : header received, size = " << header_buffer.get_data_size() << std::endl;
     if (tcp_server_debug_level_ > 3) header_buffer.print_buffer_content();
@@ -45,14 +54,16 @@ bool tcp_server::receive_header_message(unique_message_ptr &message)
     if ( s != message_class::message_state_def::initialized) {
         if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_header_message : error initializing message with header buffer" << std::endl;
         // dont do that with a nullptr: if (tcp_server_debug_level_ > 1) message -> print_meta_data();
-        set_error_state(true, "tcp_server : receive_header_message : error initializing message with header buffer");
+        //set_error_state(true, "tcp_server : receive_header_message : error initializing message with header buffer");
+        error_state_ = error_creating_message_from_header_buffer;
 		return false;
     } 
 
     // all fine, return the number of bytes received
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_header_message : message initialized" << std::endl;
     if (tcp_server_debug_level_ > 3) message -> print_meta_data();
-	reset_error_state();
+	error_state_ = header_message_received;
+	error_category_ = ok;
     return true;
 }
 
@@ -63,23 +74,32 @@ bool tcp_server::receive_data_message(unique_message_ptr &message){
     buffer_class data_buffer = message -> get_properly_sized_empty_data_buffer_according_to_header_data();
     if (tcp_server_debug_level_ > 3) data_buffer.print_buffer_meta_data();
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : reading data message from tcp" << std::endl;
+    
     int result = tcp_class::TCP_receive_buffer(data_buffer);
+    //Return_type<buffer_class> result = tcp_class::TCP_receive_buffer(std::move(data_buffer));
 
     // in case of issues nothing to do here
     if (result < 0 ) return false;
-
+    /*
+    if (result) {
+		std::cout << "honkey dorey" << std::endl;
+	} else {
+		std::cout << "error" << std::endl;
+	}
+	*/
     // no issues -> process data buffer
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : data received, size = " << data_buffer.get_data_size() << std::endl;
     if (tcp_server_debug_level_ > 3) data_buffer.print_buffer_content();
 
-    result = message->insert_data_buffer(std::move(data_buffer));
+    int result1 = message->insert_data_buffer(std::move(data_buffer));
     if (tcp_server_debug_level_ > 2) message -> print_meta_data();
     
     // result 0 : everything is ok
-    if (result < 0) {
+    if (result1 < 0) {
         if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : error inserting data buffer into message" << std::endl;
         //if (tcp_server_debug_level_ > 1) message -> print_meta_data();
-		set_error_state(true,"tcp_server : receive_data_message : error inserting data buffer into message");
+		error_state_ = error_inserting_data_buffer_into_message;
+		//set_error_state(true,"tcp_server : receive_data_message : error inserting data buffer into message");
 		return false;
     } 
     if (tcp_server_debug_level_ > 1) std::cout << "tcp_server : receive_data_message : message completed" << std::endl;
@@ -156,12 +176,12 @@ void tcp_server::process_messages(){
 
         // first receive the header message - only if a proper header is received then initialize a message and increase the state
         if ( receive_header_message(message) == false) {
-            if (tcp_server_debug_level_ > 0) std::cout << "tcp_server : process_messages : error reading header buffer from tcp : " << read_error_message() << "\n";
+            if (tcp_server_debug_level_ > 0) std::cout << "tcp_server : process_messages : error reading header buffer from tcp : " << error_state_ << "\n";
         } else {
 
         // second receive the data message - only if a proper cvmat is received then complete the message
             if (receive_data_message(message) == false) {
-                if (tcp_server_debug_level_ > 0) std::cout << "tcp_server : process_messages : error reading data buffer from tcp : " << read_error_message() << "\n";
+                if (tcp_server_debug_level_ > 0) std::cout << "tcp_server : process_messages : error reading data buffer from tcp : " << error_state_ << "\n";
             } else {
                 if (tcp_server_debug_level_ > 0) std::cout << "\n\ntcp_server : process_messages : error completing message with data" << std::endl;
         // third queue the message
@@ -174,11 +194,11 @@ void tcp_server::process_messages(){
             }
         }
        
-        std::string error_message;
-        error_state_.read_error_state(error_message);
+        //std::string error_message;
+        //error_state_.read_error_state(error_message);
 
         // forth check for shutdown
-        if (error_message == "shutdown") {
+        if (error_state_ == client_shutting_down) {
             if (tcp_server_debug_level_ > 0) std::cout << "\n\ntcp_server : process_messages : seems client is shutting down" << std::endl;
             the_end = true;
         } else {

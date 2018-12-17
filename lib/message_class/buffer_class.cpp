@@ -6,7 +6,7 @@ buffer_class::buffer_class() :
         data_buffer_( std::unique_ptr<cv::Mat> (new (cv::Mat)) ),
         buffer_debug_level_(BUFFER_DEBUG_LEVEL)
 {
-    if (buffer_debug_level_>0) if (buffer_debug_level_>0) std::cout << "buffer_class : standard constructor call" << std::endl;
+    if (buffer_debug_level_>0) if (buffer_debug_level_>0) std::cout << "buffer_class : standard constructor call creates invalid creates invalid buffer !!!" << std::endl;
 }
 
 buffer_class::buffer_class(const int &size) :

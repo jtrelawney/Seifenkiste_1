@@ -1,16 +1,8 @@
-#include <option_class.h>
+#include <return_type_class.h>
 
 #include <iostream>
 
-Option<int> divide(int a, int b) noexcept {
-  if (b == 0) {
-    return Nothing();
-  } else {
-    return a/b;
-  }
-}
-
-Option<int> divide(int a, int b) noexcept {
+Returntype<int> divide(int a, int b) noexcept {
   if (b == 0) {
     return Nothing();
   } else {
@@ -19,7 +11,7 @@ Option<int> divide(int a, int b) noexcept {
 }
 
 int main(void) {
-  Option<int> result = divide(10, 0);
+  Returntype<int> result = divide(10, 0);
   if (result) { // Check that result is not Nothing
     printf("I got a %d\n", result.unwrap());
   } else {

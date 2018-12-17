@@ -4,6 +4,31 @@
 #include <vector>
 
 #include <common.h>       //  basoc stuff for all
+#include <return_type_class.h>
+
+Return_type<int> divide(int a, int b) noexcept {
+  if (b == 0) {
+    return Nothing();
+  } else {
+    return a/b;
+  }
+}
+
+void test_return_type() {
+  Return_type<int> result = divide(10, 0);
+  if (result) { // Check that result is not Nothing
+    printf("I got a %d\n", result.unwrap());
+  } else {
+    printf("You divided by 0... the world blew up... Thanks\n");
+  }
+  
+  result = divide(100,10);
+  if (result) { // Check that result is not Nothing
+    printf("I got a %d\n", result.unwrap());
+  } else {
+    printf("You divided by 0... the world blew up... Thanks\n");
+  }
+}
 
 int main ()
 {
@@ -29,3 +54,5 @@ int main ()
     test_params.print_cvMat_params();
 
 }
+
+

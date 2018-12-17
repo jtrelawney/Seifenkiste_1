@@ -39,17 +39,19 @@ protected:
     std::unique_ptr<cv::Mat> data_buffer_;
     int buffer_debug_level_;
 
-    // only want vector or cvmat buffer
-    buffer_class();
-
 public:
+
+    // only want vector or cvmat buffer, hence make it private
+    // however the Returntype class when returning Nothing() calls the constructor
+    // so make it public and set the status to invalid
+    buffer_class();
 
     // print the current buffer content
     void print_buffer_meta_data(const bool &with_buffer_content = false);
     void print_buffer_content(const int &num_elems = 10);
 
     // control move/copy constructors / assignement operators
-    buffer_class( buffer_class&) = delete;
+    //buffer_class( buffer_class&);
     buffer_class& operator=(buffer_class&) = delete;
     buffer_class( buffer_class&&) = default;
     buffer_class& operator=(buffer_class&&) = delete;

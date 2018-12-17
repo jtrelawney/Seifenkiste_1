@@ -31,10 +31,12 @@
 
 // get the proper tcp header length from a central definiton
 #include <common.h>
+#include <return_type_class.h>
 extern const int TCP_HEADER_LENGTH;
 
 // vector<char> objects to transfer the data (instead of char*)
 #include <buffer_class.h>
+#include <tcp_state_defs.h>
 
 
 // basic tcp class
@@ -50,71 +52,41 @@ public:
 
     //for both client and server
     // create and close sockets
-    int TCP_create_socket(const int &portno);
-    int TCP_close_socket();
+    tcp_error_def TCP_create_socket(const int &portno);
+    tcp_error_def TCP_close_socket();
 
     // for client only
     // connect to server
-    int TCP_connect(std::string server_ip);
+    tcp_error_def TCP_connect(std::string server_ip);
 
     // for server only    
     // listen and establish connections - used for server
-    int TCP_bind();
-    int TCP_listen();
-    int TCP_accept_connection();
-    int TCP_close_client_session_socket();
+    tcp_error_def TCP_bind();
+    tcp_error_def TCP_listen();
+    tcp_error_def TCP_accept_connection();
+    tcp_error_def TCP_close_client_session_socket();
 
     // for both client and server
     // communication - send and receive buffers (i.e. access to char*, length via vectors of char
     // int TCP_send_buffer(buffer_class buffer);
-    int TCP_send_buffer(buffer_class &&buffer);
-    int TCP_receive_buffer(buffer_class &message_buffer);
+    tcp_error_def TCP_send_buffer(buffer_class &&buffer);
 
+    tcp_error_def TCP_receive_buffer(buffer_class &message_buffer);
+    //Return_type<buffer_class> TCP_receive_buffer(buffer_class &&buffer);
+    
     // prints the current status information based on tcp_state
     void TCP_print_status();
     // prints the fd descriptor information
     void TCP_print_fd_info();
 
-    class error_class {
-    private:
-        error_class(){reset_error_state();};
-    public:
-        bool error_status_;
-        std::string error_message_;
-        error_class(bool status, std::string message) : error_status_(status), error_message_(message){};
-        ~error_class(){};
-        void set_error_state(const bool status, const std::string &message){ error_message_ = message; error_status_ = status;};
-        void reset_error_state(){ error_message_ = "ok"; error_status_ = false; };
-        bool is_error(){ return error_status_;};
-        bool read_error_state(std::string &message){ message = error_message_; return error_status_;};
-        std::string read_error_message(){ return error_message_;};
-    };
-    
-    std::string read_error_message() { return error_state_.read_error_message(); };
+
 
 protected:
 
-	// object state
-	enum tcp_state_def : int {
-        tcp_initialized = 0,            // set by constructor, the tcp object is initialized, (not the port, fd, connection etc)
-        socket_created = 1,             // call tcp.socket() was successful, the socket is valid            
-        socket_error = 2,               // wrong state to call tcp.socket() or call was not successful, the socket is invalid
-        gethost_error = 3,              // during connect, the ip address could not be resolved to server data
-        gethost_successful = 4,         // the ip address was successfully resolved, (this is currently immediately followed by connect, so not a used state)
-        tcp_connect_error = 5,          // if the attempt to connect to the server fails
-        tcp_connect_successful = 6,     // if the attempt to connect to the server is sucessful
-        bind_call_failed,
-        bind_call_successful,
-        listen_call_failed,
-        listen_call_succesful,
-        TCP_close_failed,
-        TCP_close_successful
-    };
-
-	error_class error_state_;
 	tcp_state_def tcp_state_;
-	void reset_error_state(){ error_state_.reset_error_state(); };
-	void set_error_state(const bool status, const std::string &message){ error_state_.set_error_state(status, message); };
+	tcp_error_def error_state_;
+	error_category_def error_category_;
+	
 
     // not yet working, is supposed to read 0 length and retrieve status
     //int check_buffer(); code see bottom of this file
