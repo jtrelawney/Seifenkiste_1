@@ -277,6 +277,7 @@ int message_class::insert_data_buffer(buffer_class &&data_buffer){
     if (message_debug_level_>2) {
          if (message_debug_level_>1) std::cout << "message_class : insert_data_buffer : compare the expected and the received data params" << std::endl;
         if (message_debug_level_>2) {
+			std::cout << "not all parameters may match , some are set when the cmat constructor is called (rows, cols, channels, elemsize and type need to match)" << std::endl;
             std::cout << "\n\nexpected:" << std::endl;
             data_params_.print_cvMat_params();
             std::cout << "\n\nreceived:" << std::endl;

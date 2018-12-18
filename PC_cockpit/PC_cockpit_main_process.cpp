@@ -40,6 +40,8 @@ void run_tcp_server(){
     }
     std::cout << "server done, shutting down now " << std::endl;
     server.shut_down();
+    std::cout << "server completed shutdown, ending process" << std::endl;
+    exit(0);
 }
 
 void run_cockpit(){
@@ -172,6 +174,7 @@ int main(int argc, char *argv[])
 
     std::cout << "main program done" << std::endl;
 
+	exit(0);
     return 0;
 
 }

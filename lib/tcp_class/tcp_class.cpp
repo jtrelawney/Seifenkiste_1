@@ -57,22 +57,22 @@ tcp_error_def tcp_class::TCP_create_socket(const int &portno)
 		return error_state_;
 	}
 
-    if (port_number_ == -1) {
+    if ( (portno < 8192) || (portno > 2*8192 ) ) {
 		if (tcp_debug_level_> 0) {
-			std::cout << "tcp class : create socket call : port_number not defined = " << port_number_ << std::endl;
+			std::cout << "tcp class : create socket call : invalid port_number" << port_number_ << std::endl;
 		}
 		error_state_ = portnumber_undefined;
 		error_category_ = warning;
 		return error_state_;
 	}
-
+	
 	// at this point we should be ready to create the socket
     // state found to be acceptable to create a socket
     socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd_ < 0) {
         if (tcp_debug_level_> 0) std::cout << "tcp class : create socket : attempt to create a socket failed" << std::endl;
-		error_state_ = error_creating_socket;
-		error_category_ = warning;
+		error_state_ = tcp_error_creating_socket;
+		error_category_ = error;
 		return error_state_;
     }
     
@@ -104,7 +104,7 @@ tcp_error_def tcp_class::TCP_close_socket(){
     if (result<0) {
         if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : tcp.shutdown socket_fd_ failed, result = " << result << std::endl;
         // dont change tcp_state_ = ;
-		error_state_ = shutdown_socket_failed;
+		error_state_ = tcp_shutdown_socket_failed;
 		error_category_ = warning;
 		return error_state_;
     } else {
@@ -120,7 +120,7 @@ tcp_error_def tcp_class::TCP_close_socket(){
     result = close(socket_fd_);
     if (result<0) {
         if (tcp_debug_level_> 0) std::cout << "tcp_class : close socket : close socket_fd_ failed, result = " << result << std::endl;
-        error_state_ = close_socket_failed;
+        error_state_ = tcp_close_socket_failed;
 		error_category_ = warning;
 		return error_state_;
     }
@@ -151,7 +151,7 @@ tcp_error_def tcp_class::TCP_connect(std::string server_ip){
     if (result<0) {
         if (tcp_debug_level_>0) std::cout << "tcp_class : connect : get_host_info call failed for ip = " << server_ip_address_ << std::endl;
 		// dont change tcp_state_ = tcp_initialized;
-		error_state_ = gethost_error;
+		error_state_ = tcp_gethost_error;
 		error_category_ = warning;
 		return error_state_;
     }
@@ -242,7 +242,7 @@ tcp_error_def tcp_class::TCP_close_client_session_socket(){
     int result = shutdown(accepted_connection_fd,1);   // parameter 1 = write functionality
     if (result<0) {
         std::cout << "tcp_class : shutdown accepted_connection_fd failed, result = " << result << std::endl;
-		error_state_ = shutdown_socket_failed;
+		error_state_ = tcp_shutdown_socket_failed;
 		error_category_ = warning;
 		return error_state_;
     } else {
@@ -254,7 +254,7 @@ tcp_error_def tcp_class::TCP_close_client_session_socket(){
     result = close(accepted_connection_fd);
     if (result<0) {
         std::cout << "tcp_class : close accepted_connection_fd failed, result = " << result << std::endl;
-		error_state_ = close_socket_failed;
+		error_state_ = tcp_close_socket_failed;
 		error_category_ = warning;
 		return error_state_;
     }
@@ -284,7 +284,7 @@ tcp_error_def tcp_class::TCP_bind(){
     if (result < 0) {
         if (tcp_debug_level_>0) std::cout << "tcp server : bind call failed" << std::endl;
 		//tcp_state_ = tcp_initialized;
-		error_state_ = bind_call_failed;
+		error_state_ = tcp_bind_call_failed;
 		error_category_ = warning;
 		return error_state_;
     }
@@ -306,7 +306,7 @@ tcp_error_def tcp_class::TCP_listen(){
     if (result < 0) {
         if (tcp_debug_level_>0) std::cout << "tcp server : listen call failed" << std::endl;
 		//tcp_state_ = bind_call_successful;
-		error_state_ = listen_call_failed;
+		error_state_ = tcp_listen_call_failed;
 		error_category_ = warning;
 		return error_state_;
     }
@@ -396,14 +396,14 @@ tcp_error_def tcp_class::TCP_accept_connection(){
 	int new_connection_fd = accept(socket_fd_, (struct sockaddr *) &client_socket_info, &client_info_len);
 	if (new_connection_fd < 0) {
         if (tcp_debug_level_>-1) std::cout << "tcp class : accept connection - failed" << std::endl;
-		error_state_ = accept_connection_failed;
+		error_state_ = tcp_accept_connection_failed;
 		error_category_ = warning;
 		return error_state_;
     }
 
     accepted_connection_fd = new_connection_fd;
     if (tcp_debug_level_>-1) std::cout << "tcp class : accept connection succeeded - fd = " << accepted_connection_fd << std::endl;
-	error_state_ = accept_connection_successeful;
+	error_state_ = tcp_accept_connection_successeful;
 	error_category_ = ok;
 	return error_state_;
 
@@ -412,45 +412,7 @@ tcp_error_def tcp_class::TCP_accept_connection(){
 
 void tcp_class::TCP_print_status(){
 
-    std::cout << "tcp_class : print status information " << std::endl;
-	switch( (int)tcp_state_){
-		
-		case tcp_initialized:
-  			std::cout << "tcp_class : status = TCP object initialized" << std::endl;
-            break;
-        case socket_created:
-  			std::cout << "tcp_class : status = TCP socket created, port = " << port_number_ << std::endl;
-			break;
-		case error_creating_socket:
-			std::cout << "tcp_class : status = error creating socket" << std::endl;
-			break;
-		case gethost_successful:
-			std::cout << "tcp_class : status = host information resolved" << std::endl;
-			break;
-		case gethost_error:
-			std::cout << "tcp_class : status = failed to resolve host information" << std::endl;
-			break;
-		case tcp_connect_successful:
-			std::cout << "tcp_class : status = connection established to remote host" << std::endl;
-			break;
-		case tcp_connect_error:
-			std::cout << "tcp_class : status = error connecting to remote host" << std::endl;
-			break;
-		case bind_call_failed:
-			std::cout << "tcp_class : status = bind call failed" << std::endl;
-			break;
-		case bind_call_successful:
-			std::cout << "tcp_class : status = bind call succesful" << std::endl;
-			break;
-		case listen_call_failed:
-			std::cout << "tcp_class : status = listen call failed" << std::endl;
-			break;
-		case listen_call_succesful:
-			std::cout << "tcp_class : status = listen call succesful" << std::endl;
-			break;
-		default:
-			std::cout << "tcp state is ok" << std::endl;
-	}
+ 
 }
 
 // prints the fd descriptor information
@@ -469,7 +431,7 @@ int tcp_class::get_host_info(const char *server_addr){
 	host_info = gethostbyname(server_addr);
     if (host_info == NULL) {
         if (tcp_debug_level_>0) std::cout << "tcp_class : error resolving host information for " << server_ip_address_ << std::endl;
-        error_state_ = gethost_error;
+        error_state_ = tcp_gethost_error;
         result = -1;
     }   else {
         if (tcp_debug_level_>0) std::cout << "tcp_class : host information resolved" << std::endl;

@@ -25,13 +25,18 @@ void receive_messages(){
     server.set_termination_predicate( []() { std::cout << "receive messages : check end flag " << std::endl; return the_end;});
     result = server.start_up();
 
-    if ( !(result<0) ) {
-        while(the_end == false) {
-            std::cout << "server listening on port" << std::endl;
-            server.connect_and_receive();
-            std::cout << "server returning from blocking call" << std::endl;
-        }
-    }
+    if ( result < 0 ) {
+		std::cout << "server startup failed, stopping operatoin" << std::endl;
+		server.shut_down();
+		return;
+	}
+
+	while(the_end == false) {
+		std::cout << "server listening on port" << std::endl;
+		server.connect_and_receive();
+		std::cout << "server returning from blocking call" << std::endl;
+	}
+
     server.shut_down();
 }
 
@@ -63,7 +68,6 @@ void send_message(tcp_client &client){
     std::cout << "send the test message" << std::endl;
     client.send_message(std::move(test_message));
     std::cout << "tcp: message sent, set the end-flag, this may not reach the server if setting the flag happens after receive" << std::endl;
-    the_end = true;
     client.print_status();
 }
 
@@ -84,6 +88,9 @@ int main()
 
     std::cout << "waiting 3s and then shut down" << std::endl;
     sleep(3);
+    
+    the_end = true;
+
 
     // send messages round 2
     //std::cout << "\n\nand one more round ...." << std::endl;
