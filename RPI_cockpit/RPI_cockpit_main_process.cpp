@@ -90,7 +90,7 @@ void run_camera_thread(){
             std::cout << "camera process : queuing message" << std::endl;
             G_MESSAGE_QUEUE_PTR->enqueue(std::move(message));
             //if (result<0) std::cout << "error sending message via TCP" << std::endl; //client.print_status();
-            the_end = (frame_count>1);
+            the_end = (frame_count>100);
             
 			if( cv::waitKey(1) >= 0) break;
 
@@ -176,7 +176,8 @@ int main(int argc, char *argv[])
 
     // create global message queue and endflag
     std::cout << "\n\n\ncreating global message queue" << std::endl;
-    G_MESSAGE_QUEUE_PTR = new message_queue_class();
+    G_MESSAGE_QUEUE_PTR = new message_queue_class(address_class::platform_type_def::rpi);
+    //G_MESSAGE_QUEUE_PTR = new message_queue_class();
     G_MESSAGE_QUEUE_PTR -> set_debug_level(5);
     std::cout << "pulling in global end flag" << std::endl;
     extern end_flag_class G_END_FLAG;

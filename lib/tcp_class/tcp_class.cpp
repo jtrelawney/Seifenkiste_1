@@ -213,6 +213,7 @@ tcp_error_def tcp_class::TCP_send_buffer(buffer_class &&buffer){
 				return error_state_; 
 		} else {
 			message_length_to_write-=written_message_length;
+			data_ptr+=written_message_length;
 			if (tcp_debug_level_>3) {
 				std::cout << "written message length = " << written_message_length;
 				std::cout << "      left to write " << message_length_to_write << "     from a total of " << target_length << std::endl;
