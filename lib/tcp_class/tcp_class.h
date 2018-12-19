@@ -24,7 +24,7 @@
 
 
 // defines what warnings / errors are printed
-#define TCP_DEBUG_LEVEL 9
+#define TCP_DEBUG_LEVEL 3
 
 // used to receive short messages
 #define TCP_MAX_BUFFER_SIZE 2048

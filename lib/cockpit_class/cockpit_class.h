@@ -29,7 +29,7 @@
 extern message_queue_class *G_MESSAGE_QUEUE_PTR;
 extern end_flag_class G_END_FLAG;
 
-const int COCKPIT_DEBUG_LEVEL = 0;
+const int COCKPIT_DEBUG_LEVEL = 3;
 
 class cockpit_class{
 private:

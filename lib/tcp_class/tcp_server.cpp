@@ -217,10 +217,7 @@ void tcp_server::process_messages(){
                 } else if (tcp_server_debug_level_ > 0) std::cout << "tcp_server : process_messages : no message queue defined, can't queue message\n"; 
             }
         }
-       
-        //std::string error_message;
-        //error_state_.read_error_state(error_message);
-
+        
         // forth check for end condition - either shutdown signaled or end predicate set
         
         // 1. shut down required?

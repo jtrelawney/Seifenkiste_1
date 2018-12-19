@@ -305,9 +305,8 @@ message_class::message_state_def message_class::get_state(){
 
 void message_class::print_meta_data(){
 
-	std::cout << "\n-------------------------\n";
-    std::cout << "\n\nmessage metadata:\n";
-	
+	std::cout << "\n\n============================================================================\n\n";
+    
     std::cout << "message ptr" << (unsigned long)this << std::endl;	
     if (state_ == initialized) std::cout << "message status = initialized\n" << std::endl;	 
     if (state_ == complete) std::cout << "message status = complete\n" << std::endl;
@@ -326,12 +325,13 @@ void message_class::print_meta_data(){
     std::cout << "cvmat data params" << std::endl;
     data_params_.print_cvMat_params();
     if (state_ != complete) {
-        std::cout << "message not complete yet, data not available" << std::endl;
+        std::cout << "message data not available (not inserted or handed over)" << std::endl;
     } else {
         print_data(20);
     }
     
-    std::cout << "\n-------------------------\n";
+	std::cout << "\n\n============================================================================\n\n";
+
 }
 
 void message_class::print_data(unsigned int howmany){

@@ -86,7 +86,7 @@ message("\n===================================================")
 # set libraries to use for this project
 set(OPENCV_LIBS opencv_core opencv_highgui opencv_imgproc opencv_video opencv_videoio)
 set(GENERAL_LIBS rt)
-set(MY_LIBS common_stuff buffer_class address_class message_class sensor_base_class sensor_camera_class communication_class message_queue_class)
+set(MY_LIBS common_stuff buffer_class address_class message_class sensor_base_class sensor_camera_class communication_class message_queue_class cockpit_class)
 set(ALL_PROJECT_LIBS ${GENERAL_LIBS} ${MY_LIBS} ${OPENCV_LIBS})
 message ("\n\nsetting libraries as :\n" ${ALL_PROJECT_LIBS} "\n")
 

@@ -16,6 +16,7 @@
 #include <message_queue_class.h>
 #include <sensor_camera_class.h>
 #include <tcp_server.h>
+#include <cockpit_class.h>
 
 // define a global queue object for all processes / objects to refer to using extern 
 message_queue_class *G_MESSAGE_QUEUE_PTR;
@@ -130,8 +131,16 @@ int main(int argc, char *argv[])
     sleep(1);
 
     // create the cockpit process, it receives and displays images
-    std::cout << "\n\n\ncreating cockpit process" << std::endl;
-    std::thread cockpit_thread(&run_cockpit);
+    // create the cockpit process, it receives and displays images
+    std::cout << "creating cockpit process" << std::endl;
+    address_class cockpit_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::undefined_sensor,address_class::process_type_def::cockpit);
+
+    //cockpit_class cockpit_obj(cockpit_addr);
+    //std::thread cockpit_process( &cockpit_class::keep_processing , cockpit_obj );
+    std::thread cockpit_thread = cockpit_class(cockpit_addr)();
+
+    //std::cout << "\n\n\ncreating cockpit process" << std::endl;
+    //std::thread cockpit_thread(&run_cockpit);
 
     // waiting for things to catch up
     sleep(1);

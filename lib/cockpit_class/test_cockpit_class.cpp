@@ -67,29 +67,6 @@ void camera_thread(){
     std::cout << "camera done , current framecount = " << frame_count << std::endl;
 }
 
-/*
-void dummy_thread(){
-
-    address_class tcp_addr(address_class::platform_type_def::pc,address_class::sensor_type_def::undefined_sensor,address_class::process_type_def::tcp);
-
-    std::time_t ct;
-    std::cout << "dummy_thread locks its mutex and will sleep" << std::endl;
-    int reader_index = tcp_addr.get_process_index();
-    std::unique_lock<std::mutex> lock_it(G_QUEUE_COORDINATION_VARS_OBJ.message_available_mutex[reader_index]);
-    while(true) {
-        //std::cout << "dummy_thread releases its mutex and sleeps" << std::endl;
-        G_QUEUE_COORDINATION_VARS_OBJ.message_available_condition[reader_index].wait(lock_it);
-        if (G_MESSAGE_QUEUE_PTR -> get_shut_down_flag() == true) break;
-        ct = get_time();
-        //std::cout << "dummy_thread = " << reader_index << " wakes up @ " << ct << std::endl;
-        unique_message_ptr message = G_MESSAGE_QUEUE_PTR->dequeue(tcp_addr);
-        //std::cout << "dummy_thread shoud not receive message, dropping the garbage" << std::endl;
-    }
-    ct = get_time();
-    std::cout << "dummy_thread pid = " << tcp_addr << " verified the shutdown flag and is exiting @ " << ct << std::endl;
-}
-*/
-
 int main(int argc, char *argv[])
 {
     int N = 3;

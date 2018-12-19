@@ -73,13 +73,13 @@ void cockpit_class::keep_processing(){
 
             //std::cout << "\nmessage received " << message->get_id() << std::endl;
             if (message!=nullptr) {
+				if (cockpit_debug_level_>2) message -> print_meta_data();
                 std::unique_ptr<cv::Mat> frame = message->fetch_data();
                 //cv::Mat frame = uframe -> get();
                 std::string output = "dt=" + std::to_string(camera_frequency);
                 //std::cout << "dt = " << camera_frequency << "   " << output << std::endl;
                 cv::putText(*frame, output, cv::Point(30,30), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(255,0,0), 1, cv::LINE_AA);
                 cv::imshow("PC_Cockpit", *frame);
-                //test_message -> print_meta_data();
             }
 
             // message processed -> set com flag
